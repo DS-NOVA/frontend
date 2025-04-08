@@ -1,0 +1,21 @@
+# Dependency folders
+node_modules/
+bower_components/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# Environment files
+.env
+
+# VSCode settings
+.vscode/
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+Desktop.ini
