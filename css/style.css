@@ -1,5 +1,10 @@
-/*컬러 팔레트*/
+/*컬러 팔레트 및 폰트*/
+/*
+font-weight로 굵기 조절 가능
+*/
 :root {
+  --font-primary: 'Pretendard Variable', sans-serif;
+
   --color-main-blue: #5287EA; /*button과 timeline에 사용*/
   --color-main-white: #ffffff;/*font와 배경에 사용*/
 
@@ -20,8 +25,10 @@
   --color-timelines-middle: #81B4F5;
 }
 
+
 body {
-  font-family: Arial, sans-serif;
+  font-family: var(--font-primary);
+  font-size: 16px;
   background-color: var(--color-main-white);
   color: var(--color-font-dark-blue);
   margin: 0;
@@ -69,6 +76,7 @@ body {
   align-items: center;
   gap: 20px; 
   font-size: 2vh;
+  font-weight: 400;
 }
 
 /* non-user-profile: 로그인 전 상태 */
