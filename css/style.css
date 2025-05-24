@@ -1,7 +1,29 @@
+/*컬러 팔레트*/
+:root {
+  --color-main-blue: #5287EA; /*button과 timeline에 사용*/
+  --color-main-white: #ffffff;/*font와 배경에 사용*/
+
+  --color-button-light: #D1E1FF;
+  --color-button-grey: #EDF3FF;
+
+  --color-font-dark-blue: #29477F;
+  --color-font-black: #000000;
+  --color-font-pink: #FF95BC;
+  --color-font-yellow: #FFEC5A;
+  --color-font-green: #5AED9C;
+  --color-font-grey: #9D9D9D;
+
+  /*그라데이션*/
+  --color-sensitivity-level-light: #5570FF;
+  --color-sensitivity-level-dark: #334399;
+
+  --color-timelines-middle: #81B4F5;
+}
+
 body {
   font-family: Arial, sans-serif;
-  background-color: #ffffff;
-  color: #333;
+  background-color: var(--color-main-white);
+  color: var(--color-font-dark-blue);
   margin: 0;
 
 }
