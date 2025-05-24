@@ -1,4 +1,3 @@
-
 /*navbar*/
 .navbar {
   position: relative;
@@ -15,18 +14,20 @@
   width: 100%;
   height: 100%;
   z-index: -1;
+  
 }
 
 .nav-content {
-  position: absolute;
+  position: relative;
   z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  padding: 0 20px;
-
+  padding: 0 30px;
+  color: var(--color-font-dark-blue);
+  font-family: var(--font-primary);
 }
 /* 로고 */
 .nav-left .nav_logo {
@@ -47,6 +48,7 @@
 .non-user-profile {
   display: flex;
   gap: 12px;
+  cursor: pointer;
 }
 
 /* user-profile: 로그인 후 상태 */
