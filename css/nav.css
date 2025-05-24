@@ -1,4 +1,3 @@
-
 /*navbar*/
 .navbar {
   position: relative;
@@ -15,10 +14,11 @@
   width: 100%;
   height: 100%;
   z-index: -1;
+  
 }
 
 .nav-content {
-  position: absolute;
+  position: relative;
   z-index: 1;
   display: flex;
   justify-content: space-between;
@@ -26,7 +26,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 0 20px;
-
+  color: var(--color-font-dark-blue)
 }
 /* 로고 */
 .nav-left .nav_logo {
