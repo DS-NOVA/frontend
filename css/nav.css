@@ -25,8 +25,9 @@
   align-items: center;
   width: 100%;
   box-sizing: border-box;
-  padding: 0 20px;
-  color: var(--color-font-dark-blue)
+  padding: 0 30px;
+  color: var(--color-font-dark-blue);
+  font-family: var(--font-primary);
 }
 /* 로고 */
 .nav-left .nav_logo {
