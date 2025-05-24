@@ -59,7 +59,7 @@ body {
     gap: 8px;
 }
 
-#log-in{
+#main-log-in{
     background-color: var(--color-main-white);
     color: var(--color-font-dark-blue);
     width: 8%;
@@ -68,7 +68,7 @@ body {
     border-radius: 40px;
 }
 
-#dashboard{
+#main-dashboard{
     background-color: var(--color-main-blue);
     color: var(--color-main-white);
     width: 8%;

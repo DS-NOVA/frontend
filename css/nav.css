@@ -48,6 +48,7 @@
 .non-user-profile {
   display: flex;
   gap: 12px;
+  cursor: pointer;
 }
 
 /* user-profile: 로그인 후 상태 */
