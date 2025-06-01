@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Nova</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/nav.css" />
+    <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" />
+    
+</head>
+
+  </head>
+
+  <body>
+
+    <header>
+      <div id="nav"></div>
+    </header>
+    
+    <main class="main-content">
+
+      <!-- 영상 업로드 영역 -->
+      <section class="upload">
+
+        <input type="file" id="videoInput" accept="video/*" style="display: none;" />
+        <button id="dashboard-upload" type="button">
+          <img src="../img/file_img.svg" alt="파일이미지" class="file_img" />
+          select a file to upload
+        </button>
+      </section>
+
+      <section class="video">
+
+        <!-- 변환 전 영상이 보여지는 영역 -->
+        <div class="input">
+          <small>영상 변환 전</small>
+          <video id="inputVideo" width="100%" height="450" controls></video>
+        </div>
+
+        <!-- 변환 후 영상이 보여지는 영역 -->
+        <div class="output">
+          <small>영상 변환 후</small>
+          <video id="outputVideo" width="100%" height="450" controls></video>
+        </div>
+        
+      </section>
+      <section class="timeline">
+        타임라인부분
+      </section>
+
+    </main>
+
+    <script src="../js/dashboard.js"></script>
+    <script src="../js/nav.js"></script>
+  </body>
+</html>

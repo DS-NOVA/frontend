@@ -1,0 +1,51 @@
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+  position: relative;
+}
+
+section{
+  margin : 10px;
+}
+
+.file_img{
+  width: 20px;
+  height: auto; /* 비율 유지 */
+}
+
+.upload button {
+  background-color: transparent;
+  border: none;
+
+  display: flex;
+  align-items: center;      /* 세로 중앙 정렬 */
+  justify-content: center;  /* 가로 중앙 정렬 */
+  gap: 8px;                 /* 이미지와 글씨 사이 간격 */
+  padding: 5px 5px;
+}
+
+.upload button:hover{
+  box-shadow: 2px solid #4A90E2;
+  border-radius: 8px;
+  background-color: rgba(74, 144, 226, 0.1); /* 옅은 배경 추가 */
+  cursor: pointer;
+}
+
+.video{
+  position:absolute;
+  left: 20%;
+  display: flex; 
+  justify-content: space-between;  
+  align-items: flex-start; 
+  gap: 10px; 
+}
+
+.timeline{
+  bottom: 10%;
+}
+
