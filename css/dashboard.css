@@ -15,25 +15,48 @@ section{
 
 .file_img{
   width: 20px;
-  height: auto; /* 비율 유지 */
+  height: auto; 
 }
 
-.upload button {
+.upload{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 30px;
+}
+
+
+#dashboard-upload {
   background-color: transparent;
   border: none;
-
-  display: flex;
-  align-items: center;      /* 세로 중앙 정렬 */
-  justify-content: center;  /* 가로 중앙 정렬 */
-  gap: 8px;                 /* 이미지와 글씨 사이 간격 */
+  gap: 8px;                
   padding: 5px 5px;
+  font-size: 12px;
+  display: flex;
+  align-items: center; 
+  justify-content: center;
 }
 
-.upload button:hover{
-  box-shadow: 2px solid #4A90E2;
+#dashboard-upload:hover{
+  box-shadow: 2px solid #5287EA;
   border-radius: 8px;
   background-color: rgba(74, 144, 226, 0.1); /* 옅은 배경 추가 */
   cursor: pointer;
+}
+
+#dashboard-play {
+  background-color: #5287EA;
+  color: white;
+  border: none;
+  gap: 8px;            
+  padding: 8px 20px;
+  font-size: 12px;
+  border-radius: 200px;
+  cursor: pointer;
+}
+
+#dashboard-play:hover {
+  background-color: #0056b3;
 }
 
 .video{
