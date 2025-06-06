@@ -67,3 +67,66 @@ section{
   align-items: flex-start; 
   gap: 10px; 
 }
+
+.timeline{
+  bottom: 10%;
+}
+
+.timeline-container {
+  position: absolute;
+  bottom: 60px;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background-color: #ccc;
+  pointer-events: auto;
+}
+
+.timeline-bar {
+  position: absolute;
+  height: 100%;
+  background-color: rgba(255, 0, 0, 0.6); 
+}
+
+.videoWrapper {
+  position: relative; /* ✅ 반드시 설정 */
+  width: 100%;
+  height: 450px;
+  overflow: hidden; /* 필요 시 비디오 넘침 방지 */
+}
+
+#overlayVideo {
+  position: absolute; /* ✅ 오버레이만 겹치게 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#outputVideo {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  position: relative; /* 기본값이라도 명시 */
+}
+
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3; /* ✅ 비디오보다 위 */
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 버튼은 클릭 못하게 막히니 아래 버튼만 따로 pointer-events 주기 */
+}
+
+#pauseBtn {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 4;
+  pointer-events: auto; /* ✅ 클릭 가능하게 */
+}
