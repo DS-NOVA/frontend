@@ -113,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 
   uploadButton.addEventListener('click', () => {
+    fileInput.value = '';
     fileInput.click();
   });
 
