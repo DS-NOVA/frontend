@@ -12,33 +12,86 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentInputURL = null;
   let currentOutputURL = null;
   let overlayRanges = [];
+  let currentOverlay = null;
+
 
   //예제로 쓸 데이터 구조
-  const videoData = {
-    'coffee.mp4': {
-      outputSrc: '../videos/coffee.mp4',
+  const TestvideoData = {
+    '26_lightning.mp4': {
+      outputSrc: '../videos/26_lightning.mp4',
+      fps: 30,
       overlayRanges: [
-        { start: 3, end: 5, overlaySrc: '../overlays/pattern.mp4' },
-        { start: 8, end: 10, overlaySrc: '../overlays/dog.mp4' }
-      ]
-    },
-    'write.mp4': {
-      outputSrc: '../videos/write.mp4',
-      overlayRanges: [
-        { start: 2, end: 4, overlaySrc: '../overlays/pattern.mp4' },
-        { start: 7, end: 10, overlaySrc: '../overlays/dog.mp4' }
+        { start: 1, end: 25, overlaySrc: '../overlays/overlay_26_lightning_0001_0025.mp4' },
+        { start: 35, end: 59, overlaySrc: '../overlays/overlay_26_lightning_0035_0059.mp4' },
+        { start: 72, end: 132, overlaySrc: '../overlays/overlay_26_lightning_0072_0132.mp4' },
+        { start: 138, end: 202, overlaySrc: '../overlays/overlay_26_lightning_0138_0202.mp4' },
+        { start: 207, end: 268, overlaySrc: '../overlays/overlay_26_lightning_0207_0268.mp4' }
       ]
     }
-  };
+  }
 
+  //오버레이를 위한 fps 구하기
+  function frameToSeconds(frame, fps) {
+  return frame / fps;
+}
+
+  //백엔드에서 정보 받아오기
+  async function saveRawFrameData(rawFrameData) {
+    const FrameToVideoData = {};
+
+    for (const [fileName, { outputSrc, fps, overlayRanges }] of Object.entries(rawFrameData)) {
+      /*const overlayRanges = overlays.map(({ startFrame, endFrame, overlaySrc }) => ({
+        start: startFrame / fps,
+        end: endFrame / fps,
+        overlaySrc
+      }));*/
+
+
+      const overlay = await Promise.all(
+      overlayRanges.map(async ({ start, overlaySrc }) => {
+        const startSec = frameToSeconds(start, fps);
+        const duration = await getOverlayDuration(overlaySrc);
+        return {
+          start: startSec,
+          end: startSec + duration, // 실제 영상 길이만큼
+          overlaySrc
+        };
+      })
+    );
+
+
+      FrameToVideoData[fileName] = {
+        outputSrc,
+        overlayRanges:overlay
+      };
+    }
+
+    return FrameToVideoData;
+  }
+
+  //종료 시점(추후 수정)
+  function getOverlayDuration(overlaySrc) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.src = overlaySrc;
+    video.preload = 'metadata';
+
+    video.onloadedmetadata = () => resolve(video.duration);
+    video.onerror = () => reject(`영상 로딩 실패: ${overlaySrc}`);
+  });
+}
   function handlerPauseBtn(){
         if (pause)  {
     console.log("click start");
     outputVideo.play().then(() => {
       const currentTime = outputVideo.currentTime;
-      const activeRange = overlayRanges.find(
-        range => currentTime >= range.start && currentTime <= range.end
-      );
+      let activeRange = null;
+
+      if (!currentOverlay) {
+        activeRange = overlayRanges.find(range =>
+          Math.abs(currentTime - range.start) <= 0.1
+        );
+      }
 
       if (activeRange) {
         overlayVideo.style.opacity = "1";
@@ -68,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if(!file) return;
 
       const videoKey = file.name;
-      const currentVideo = videoData[videoKey];
+      const currentVideo = TestvideoData[videoKey]; //추후 수정
       if(!currentVideo) return alert("등록되지 않은 영상입니다.");
 
     // 메모리 누수 방지로 코드 수정
@@ -87,15 +140,97 @@ document.addEventListener('DOMContentLoaded', () => {
       inputVideo.load();
       inputVideo.play();
 
-      outputVideo.src = outputURL;
-      outputVideo.load();
-
       currentInputURL = inputURL;
-      currentOutputURL = outputURL;
+
   
-      //range 설정
+      /*range 설정
       overlayRanges = currentVideo.overlayRanges;
-      let currentOverlay = null;
+      let currentOverlay = null;*/
+
+      //타임라인 생성하기
+      outputVideo.addEventListener('loadedmetadata', () => {
+      const duration = outputVideo.duration;
+      if (!duration || isNaN(duration)) {
+        console.warn("비디오 duration이 아직 로드되지 않았습니다.");
+        return;
+      }
+      document.querySelector('.timeline-container').innerHTML = "";
+      
+      //시작, 끝 구역 가져오기
+      overlayRanges.forEach(range => {
+        const bar = document.createElement('div');
+        bar.classList.add('timeline-bar');
+
+        const safeEnd = Math.min(range.end, duration);
+        const left = (range.start / duration) * 100;
+        const width = ((safeEnd - range.start) / duration) * 100;
+
+        if (width > 100) {
+          console.warn("오버레이 width 100% 초과:", { range, duration });
+        }
+
+        bar.style.left = `${left}%`;
+        bar.style.width = `${width}%`;
+        document.querySelector('.timeline-container').appendChild(bar);
+      });
+    })
+      //오버레이 정보 생성하기
+      saveRawFrameData(TestvideoData).then(videoData => {
+        overlayRanges = videoData[videoKey].overlayRanges;
+        console.log(" 변환된 videoData:", videoData);
+
+        document.querySelector('.timeline-container').addEventListener('click', (e) => {
+            const rect = document.querySelector('.timeline-container').getBoundingClientRect();
+            const clickX = e.clientX - rect.left; // 클릭 위치
+            const percent = clickX / rect.width;
+
+            const duration = outputVideo.duration;
+            const clickTime = percent * duration;
+
+            pause = false; 
+
+            // 영상 위치 이동
+            outputVideo.currentTime = clickTime;
+            console.log(clickTime);
+            outputVideo.play().catch(err => console.log("outputVideo play blocked:", err));
+
+            // overlay 여부 판단
+            //const timeThreshold = 1.0; // 초 단위 허용 범위 (±0.2초)
+
+            // 클릭 시점에서 가까운 오버레이 range 탐색
+            const activeRange = overlayRanges.find(range =>
+            clickTime >= range.start && clickTime <= range.end
+          );
+
+
+            if (activeRange) {
+              overlayVideo.src = activeRange.overlaySrc;
+              overlayVideo.load();
+              overlayVideo.currentTime = clickTime - activeRange.start;
+              overlayVideo.style.opacity = "1";
+              overlayVideo.play().catch(err => console.log("overlayVideo play blocked:", err));
+            } else if(activeRange && currentOverlay !== activeRange){
+              overlayVideo.src = activeRange.overlaySrc;
+              overlayVideo.load();
+              overlayVideo.currentTime = 0;
+              overlayVideo.style.opacity = "1";
+              overlayVideo.play();
+              currentOverlay = activeRange;
+            }  
+            else {
+              overlayVideo.pause();
+              overlayVideo.src = "";
+              overlayVideo.style.opacity = "0";
+            }
+      });
+        
+        outputVideo.src = outputURL;
+        outputVideo.load();
+    });
+
+    
+    currentOutputURL = outputURL; //output 영상 가져오기
+    
 
 
       //결과 비디오 시작 시
@@ -108,28 +243,41 @@ document.addEventListener('DOMContentLoaded', () => {
               if (pause) return;
               const currentTime = outputVideo.currentTime;
 
-              const activeRange = overlayRanges.find(
-                range => currentTime >= range.start && currentTime <= range.end
-              );
-              console.log(activeRange);
+              //let activeRange = null;
+
+              /*if (!currentOverlay) {
+                activeRange = overlayRanges.find(range =>
+                  currentTime >= range.start && currentTime <= range.end
+                );
+              }*/
+            const activeRange = overlayRanges.find(range =>
+              currentTime >= range.start && currentTime <= range.end
+            );
+
+              console.log("currentTime:", currentTime, "activeRange:", activeRange);
 
               //변환 구간일 경우 
               if(activeRange){
                 const offset = currentTime - activeRange.start;
-                if (currentOverlay !== activeRange) {
-                        overlayVideo.src = activeRange.overlaySrc;
-                        overlayVideo.load();
-                        overlayVideo.currentTime = 0;
-                        overlayVideo.play();
-                        currentOverlay = activeRange;
-                      }
-                overlayVideo.style.opacity = "1";
-                if (Math.abs(overlayVideo.currentTime - offset) > 0.2) {
-                  overlayVideo.currentTime = offset;
+
+                if (!currentOverlay || currentOverlay.overlaySrc !== activeRange.overlaySrc) {
+                  overlayVideo.src = activeRange.overlaySrc;
+                  overlayVideo.load();
+                  overlayVideo.onloadeddata = () => {
+                    overlayVideo.currentTime = offset;
+                    overlayVideo.style.opacity = "1";
+                    overlayVideo.play();
+                    currentOverlay = activeRange;
+                  };
+                }else {
+                    overlayVideo.currentTime = offset;
+                    overlayVideo.style.opacity = "1";
+                    overlayVideo.play();
+                  }
                 }
-              }else{
-                //변환 구간이 아닌 경우 정지
+                else{
                 overlayVideo.pause();
+                overlayVideo.src = "";
                 overlayVideo.style.opacity = "0";
                 currentOverlay = null;
               }
@@ -151,59 +299,11 @@ document.addEventListener('DOMContentLoaded', () => {
         overlayVideo.pause();
         overlayVideo.style.opacity = "0";
       });
-      
-      /*타임라인 위에 변환 부분 표시 */
-      outputVideo.addEventListener('loadedmetadata', () => {
-        //이전 타임라인 제거
-        const duration = outputVideo.duration;
-        document.querySelector('.timeline-container').innerHTML = "";
-        
-        //시작, 끝 구역 가져오기
-        overlayRanges.forEach(range => {
-          const bar = document.createElement('div');
-          bar.classList.add('timeline-bar');
-          bar.style.left = `${(range.start / duration) * 100}%`;
-          bar.style.width = `${((range.end - range.start) / duration) * 100}%`;
-          // 삽입
-          document.querySelector('.timeline-container').appendChild(bar);
-    });
-      });
-
-      document.querySelector('.timeline-container').addEventListener('click', (e) => {
-            const rect = document.querySelector('.timeline-container').getBoundingClientRect();
-            const clickX = e.clientX - rect.left; // 클릭 위치
-            const percent = clickX / rect.width;
-
-            const duration = outputVideo.duration;
-            const clickTime = percent * duration;
-
-            pause = false; 
-
-            // 영상 위치 이동
-            outputVideo.currentTime = clickTime;
-            console.log(clickTime);
-            outputVideo.play().catch(err => console.log("outputVideo play blocked:", err));
-
-            // overlay 여부 판단
-            const activeRange = overlayRanges.find(
-              range => clickTime >= range.start && clickTime <= range.end
-            );
-
-            if (activeRange) {
-              overlayVideo.src = activeRange.overlaySrc;
-              overlayVideo.load();
-              overlayVideo.currentTime = clickTime - activeRange.start;
-              overlayVideo.style.opacity = "1";
-              overlayVideo.play().catch(err => console.log("overlayVideo play blocked:", err));
-            } else {
-              overlayVideo.pause();
-              overlayVideo.style.opacity = "0";
-            }
-      });
+});
     }
 );
-  
-});
+
+
 
 document.getElementById('dashboard-play').addEventListener('click', async () => {
   const file = document.getElementById('videoInput').files[0];
