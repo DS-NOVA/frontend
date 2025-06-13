@@ -1,4 +1,21 @@
-document.addEventListener('DOMContentLoaded', () => {
+// dashboard.js 최상단 또는 dashboard.html <script>에 추가
+if (window.LiveReloadBlocked !== true) {
+  const originalReload = window.location.reload;
+  window.location.reload = function () {
+    console.warn('LiveReload 금지');
+    return;
+  };
+  window.LiveReloadBlocked = true;
+}
+
+Object.defineProperty(window, 'WebSocket', {
+  get() {
+    console.warn("WebSocket 차단 (LiveReload용)");
+    return function() {};  // dummy WebSocket
+  },
+});
+
+
   const uploadButton = document.getElementById('dashboard-upload');
   const fileInput = document.getElementById('videoInput');
   const inputVideo = document.getElementById('inputVideo');
@@ -37,15 +54,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   //백엔드에서 정보 받아오기
   async function saveRawFrameData(rawFrameData) {
+    console.log("saveRawFrameData 실행");
     const FrameToVideoData = {};
 
     for (const [fileName, { outputSrc, fps, overlayRanges }] of Object.entries(rawFrameData)) {
-      /*const overlayRanges = overlays.map(({ startFrame, endFrame, overlaySrc }) => ({
-        start: startFrame / fps,
-        end: endFrame / fps,
-        overlaySrc
-      }));*/
-
 
       const overlay = await Promise.all(
       overlayRanges.map(async ({ start, overlaySrc }) => {
@@ -69,30 +81,33 @@ document.addEventListener('DOMContentLoaded', () => {
     return FrameToVideoData;
   }
 
-  //종료 시점(추후 수정)
+  //종료 시점 구하기(추후 수정)
   function getOverlayDuration(overlaySrc) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.src = overlaySrc;
-    video.preload = 'metadata';
+    return new Promise((resolve, reject) => {
+      const video = document.createElement('video');
+      video.src = overlaySrc;
+      video.preload = 'metadata';
 
-    video.onloadedmetadata = () => resolve(video.duration);
-    video.onerror = () => reject(`영상 로딩 실패: ${overlaySrc}`);
-  });
+      video.onloadedmetadata = () => resolve(video.duration);
+      video.onerror = () => reject(`영상 로딩 실패: ${overlaySrc}`);
+    });
 }
+
+//정지 버튼 눌렀을때
   function handlerPauseBtn(){
-        if (pause)  {
+    if (pause)  {
     console.log("click start");
     outputVideo.play().then(() => {
       const currentTime = outputVideo.currentTime;
       let activeRange = null;
 
+      //오버레이 시점이 아닌 경우
       if (!currentOverlay) {
         activeRange = overlayRanges.find(range =>
           Math.abs(currentTime - range.start) <= 0.1
         );
       }
-
+      //해당 범위에 해당하는 경우 
       if (activeRange) {
         overlayVideo.style.opacity = "1";
         overlayVideo.currentTime = currentTime - activeRange.start;
@@ -112,201 +127,148 @@ document.addEventListener('DOMContentLoaded', () => {
           
 }
 
+//play 버튼 이후에 실행되어야 하는 함수
+  async function handleVideoAfterUpload(file) {
+    console.log("handleVideoAfterUpload 호출됨"); 
+
+    const videoKey = file.name;
+    const currentVideo = TestvideoData[videoKey];
+    if (!currentVideo) return alert("등록되지 않은 영상입니다.");
+
+    const inputURL = URL.createObjectURL(file);
+    const outputURL = currentVideo.outputSrc;
+
+    inputVideo.src = inputURL;
+    outputVideo.src = outputURL;
+
+    currentInputURL = inputURL;
+    currentOutputURL = outputURL;
+
+    // output 메타데이터 준비 대기
+    await new Promise(resolve => {
+      outputVideo.onloadedmetadata = () => {
+        console.log(" outputVideo metadata loaded");
+        resolve();
+      };
+      outputVideo.load();
+    });
+
+    // overlayRange 세팅
+    const videoData = await saveRawFrameData(TestvideoData);
+    overlayRanges = videoData[videoKey].overlayRanges;
+    console.log(overlayRanges);
+
+    // timeline, timeupdate 등 리스너 등록
+    setupTimeline();
+    setupTimeUpdateHandler();
+
+    // 초기 상태
+    overlayVideo.pause();
+    overlayVideo.currentTime = 0;
+    overlayVideo.style.opacity = "0";
+    pause = false;
+
+    // 실제 재생
+    inputVideo.play().catch(err => console.log("input play blocked:", err));
+    outputVideo.play().catch(err => console.log("output play blocked:", err));
+  }
+
+  function setupTimeline() {
+  const duration = outputVideo.duration;
+  const container = document.querySelector('.timeline-container');
+  container.innerHTML = "";
+
+  overlayRanges.forEach(range => {
+    const bar = document.createElement('div');
+    bar.classList.add('timeline-bar');
+
+    const safeEnd = Math.min(range.end, duration);
+    bar.style.left = `${(range.start / duration) * 100}%`;
+    bar.style.width = `${((safeEnd - range.start) / duration) * 100}%`;
+
+    container.appendChild(bar);
+  });
+
+  container.onclick = e => {
+    const rect = container.getBoundingClientRect();
+    const percent = (e.clientX - rect.left) / rect.width;
+    const clickTime = percent * duration;
+
+    pause = false;
+    outputVideo.currentTime = clickTime;
+
+    const activeRange = overlayRanges.find(r => clickTime >= r.start && clickTime <= r.end);
+    if (activeRange) {
+      overlayVideo.src = activeRange.overlaySrc;
+      overlayVideo.load();
+      overlayVideo.currentTime = clickTime - activeRange.start;
+      overlayVideo.style.opacity = "1";
+      outputVideo.play();
+    } else {
+      overlayVideo.pause();
+      overlayVideo.src = "";
+      overlayVideo.style.opacity = "0";
+    }
+  };
+}
+
+function setupTimeUpdateHandler() {
+  if (handlerTimeUpdate) {
+    outputVideo.removeEventListener("timeupdate", handlerTimeUpdate);
+  }
+
+  handlerTimeUpdate = () => {
+    if (pause) return;
+    const currentTime = outputVideo.currentTime;
+
+    const activeRange = overlayRanges.find(range =>
+      currentTime >= range.start && currentTime <= range.end
+    );
+
+    if (activeRange) {
+      const offset = currentTime - activeRange.start;
+
+      if (!currentOverlay || currentOverlay.overlaySrc !== activeRange.overlaySrc) {
+        overlayVideo.src = activeRange.overlaySrc;
+        overlayVideo.load();
+        overlayVideo.onloadeddata = () => {
+          overlayVideo.currentTime = offset;
+          overlayVideo.style.opacity = "1";
+          currentOverlay = activeRange;
+        };
+      } else {
+        overlayVideo.currentTime = offset;
+        overlayVideo.style.opacity = "1";
+      }
+    } else {
+      overlayVideo.pause();
+      overlayVideo.src = "";
+      overlayVideo.style.opacity = "0";
+      currentOverlay = null;
+    }
+  };
+
+  outputVideo.addEventListener("timeupdate", handlerTimeUpdate);
+}
+
+
   uploadButton.addEventListener('click', () => {
     fileInput.value = '';
     fileInput.click();
   });
 
-  fileInput.addEventListener('change', () => {
-      const file = fileInput.files[0];
-      if(!file) return;
 
-      const videoKey = file.name;
-      const currentVideo = TestvideoData[videoKey]; //추후 수정
-      if(!currentVideo) return alert("등록되지 않은 영상입니다.");
-
-    // 메모리 누수 방지로 코드 수정
-      if (currentInputURL) {
-        URL.revokeObjectURL(currentInputURL);
-      }
-      if (currentOutputURL) {
-        URL.revokeObjectURL(currentOutputURL);
-      }
-
-      // 새 URL 생성 및 저장
-      const inputURL = URL.createObjectURL(file);
-      const outputURL = currentVideo.outputSrc || inputURL;  // 추후 진짜 output 이랑 분리 시 다른 파일로 대체
-
-      inputVideo.src = inputURL;
-      inputVideo.load();
-      inputVideo.play();
-
-      currentInputURL = inputURL;
-
-  
-      /*range 설정
-      overlayRanges = currentVideo.overlayRanges;
-      let currentOverlay = null;*/
-
-      //타임라인 생성하기
-      outputVideo.addEventListener('loadedmetadata', () => {
-      const duration = outputVideo.duration;
-      if (!duration || isNaN(duration)) {
-        console.warn("비디오 duration이 아직 로드되지 않았습니다.");
-        return;
-      }
-      document.querySelector('.timeline-container').innerHTML = "";
-      
-      //시작, 끝 구역 가져오기
-      overlayRanges.forEach(range => {
-        const bar = document.createElement('div');
-        bar.classList.add('timeline-bar');
-
-        const safeEnd = Math.min(range.end, duration);
-        const left = (range.start / duration) * 100;
-        const width = ((safeEnd - range.start) / duration) * 100;
-
-        if (width > 100) {
-          console.warn("오버레이 width 100% 초과:", { range, duration });
-        }
-
-        bar.style.left = `${left}%`;
-        bar.style.width = `${width}%`;
-        document.querySelector('.timeline-container').appendChild(bar);
-      });
-    })
-      //오버레이 정보 생성하기
-      saveRawFrameData(TestvideoData).then(videoData => {
-        overlayRanges = videoData[videoKey].overlayRanges;
-        console.log(" 변환된 videoData:", videoData);
-
-        document.querySelector('.timeline-container').addEventListener('click', (e) => {
-            const rect = document.querySelector('.timeline-container').getBoundingClientRect();
-            const clickX = e.clientX - rect.left; // 클릭 위치
-            const percent = clickX / rect.width;
-
-            const duration = outputVideo.duration;
-            const clickTime = percent * duration;
-
-            pause = false; 
-
-            // 영상 위치 이동
-            outputVideo.currentTime = clickTime;
-            console.log(clickTime);
-            outputVideo.play().catch(err => console.log("outputVideo play blocked:", err));
-
-            // overlay 여부 판단
-            //const timeThreshold = 1.0; // 초 단위 허용 범위 (±0.2초)
-
-            // 클릭 시점에서 가까운 오버레이 range 탐색
-            const activeRange = overlayRanges.find(range =>
-            clickTime >= range.start && clickTime <= range.end
-          );
-
-
-            if (activeRange) {
-              overlayVideo.src = activeRange.overlaySrc;
-              overlayVideo.load();
-              overlayVideo.currentTime = clickTime - activeRange.start;
-              overlayVideo.style.opacity = "1";
-              overlayVideo.play().catch(err => console.log("overlayVideo play blocked:", err));
-            } else if(activeRange && currentOverlay !== activeRange){
-              overlayVideo.src = activeRange.overlaySrc;
-              overlayVideo.load();
-              overlayVideo.currentTime = 0;
-              overlayVideo.style.opacity = "1";
-              overlayVideo.play();
-              currentOverlay = activeRange;
-            }  
-            else {
-              overlayVideo.pause();
-              overlayVideo.src = "";
-              overlayVideo.style.opacity = "0";
-            }
-      });
-        
-        outputVideo.src = outputURL;
-        outputVideo.load();
-    });
-
-    
-    currentOutputURL = outputURL; //output 영상 가져오기
-    
-
-
-      //결과 비디오 시작 시
-      
-      if(handlerTimeUpdate){
-        outputVideo.removeEventListener("timeupdate", handlerTimeUpdate);
-      }
-      handlerTimeUpdate =() => {
-          console.log("결과 비디오 실행 중");
-              if (pause) return;
-              const currentTime = outputVideo.currentTime;
-
-              //let activeRange = null;
-
-              /*if (!currentOverlay) {
-                activeRange = overlayRanges.find(range =>
-                  currentTime >= range.start && currentTime <= range.end
-                );
-              }*/
-            const activeRange = overlayRanges.find(range =>
-              currentTime >= range.start && currentTime <= range.end
-            );
-
-              console.log("currentTime:", currentTime, "activeRange:", activeRange);
-
-              //변환 구간일 경우 
-              if(activeRange){
-                const offset = currentTime - activeRange.start;
-
-                if (!currentOverlay || currentOverlay.overlaySrc !== activeRange.overlaySrc) {
-                  overlayVideo.src = activeRange.overlaySrc;
-                  overlayVideo.load();
-                  overlayVideo.onloadeddata = () => {
-                    overlayVideo.currentTime = offset;
-                    overlayVideo.style.opacity = "1";
-                    overlayVideo.play();
-                    currentOverlay = activeRange;
-                  };
-                }else {
-                    overlayVideo.currentTime = offset;
-                    overlayVideo.style.opacity = "1";
-                    overlayVideo.play();
-                  }
-                }
-                else{
-                overlayVideo.pause();
-                overlayVideo.src = "";
-                overlayVideo.style.opacity = "0";
-                currentOverlay = null;
-              }
-        };
-      
-        pause = false;
-      overlayVideo.pause();
-      overlayVideo.currentTime = 0;
-      overlayVideo.style.opacity = "0";
-
-      outputVideo.addEventListener("timeupdate", handlerTimeUpdate);
-
-      //pauseBtn
-      pauseBtn.removeEventListener('click', handlerPauseBtn);
-      pauseBtn.addEventListener('click', handlerPauseBtn);
-      
-      outputVideo.addEventListener('ended', () => {
-        pause = true; // 영상이 끝나면 상태를 정지로 갱신
-        overlayVideo.pause();
-        overlayVideo.style.opacity = "0";
-      });
-});
+document.addEventListener('DOMContentLoaded', () => {
+  pauseBtn.removeEventListener('click', handlerPauseBtn);
+  pauseBtn.addEventListener('click', handlerPauseBtn);
     }
 );
 
 
 
-document.getElementById('dashboard-play').addEventListener('click', async () => {
+document.getElementById('dashboard-play').addEventListener('click', async (e) => {
+  e.preventDefault();
+  e.stopPropagation();
   const file = document.getElementById('videoInput').files[0];
   if (!file) {
     alert('파일을 선택해주세요');
@@ -315,6 +277,9 @@ document.getElementById('dashboard-play').addEventListener('click', async () => 
 
   const formData = new FormData();
   formData.append('video', file);
+  formData.forEach((value, key) => {
+  console.log(`${key}:`, value);
+});
 
   try {
     const response = await fetch('http://127.0.0.1:8000/nova/dashboard/video/upload/', {
@@ -326,9 +291,28 @@ document.getElementById('dashboard-play').addEventListener('click', async () => 
     
     console.log(result);
     alert(result.message);
+
+    await handleVideoAfterUpload(file);
+    console.log("inputVideo.src:", inputVideo.src);
+    console.log("outputVideo.src:", outputVideo.src);
+    
   } catch (err) {
     console.error(err);
     // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
     // alert('업로드 실패'); 
   }
+});
+
+
+window.addEventListener('beforeunload', (e) => {
+  console.warn('🚨 페이지 unload 발생!');
+});
+
+['assign', 'replace'].forEach(method => {
+  const original = window.location[method];
+  window.location[method] = function(...args) {
+    console.warn(`🚨 location.${method} called with:`, ...args);
+    debugger;
+    return original.apply(this, args);
+  };
 });
