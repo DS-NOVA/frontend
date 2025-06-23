@@ -12,24 +12,60 @@ document.addEventListener('DOMContentLoaded', () => {
   let currentInputURL = null;
   let currentOutputURL = null;
   let overlayRanges = [];
+  let originalName = '';
+  
 
   //예제로 쓸 데이터 구조
   const videoData = {
     'coffee.mp4': {
       outputSrc: '../videos/coffee.mp4',
       overlayRanges: [
-        { start: 3, end: 5, overlaySrc: '../overlays/pattern.mp4' },
-        { start: 8, end: 10, overlaySrc: '../overlays/dog.mp4' }
+        { start: 3, end: 5, overlaySrc: '../overlays/pattern.mp4',title: 'title', description: '정보정보' },
+        { start: 8, end: 10, overlaySrc: '../overlays/dog.mp4',title: 'title', description: '정보정보' }
       ]
     },
     'write.mp4': {
       outputSrc: '../videos/write.mp4',
       overlayRanges: [
-        { start: 2, end: 4, overlaySrc: '../overlays/pattern.mp4' },
-        { start: 7, end: 10, overlaySrc: '../overlays/dog.mp4' }
+        { start: 2, end: 4, overlaySrc: '../overlays/pattern.mp4',title: 'title', description: '정보정보' },
+        { start: 7, end: 10, overlaySrc: '../overlays/dog.mp4', }
       ]
     }
   };
+
+    // 추가: 툴팁 표시 함수
+    const tooltip = document.getElementById('timelineTooltip');
+    const tooltipTime = document.getElementById('tooltipTime');
+
+  function showTooltip(e, range) {
+    const tooltipTitle = tooltip.querySelector('.tooltip-title');
+    const tooltipDesc = tooltip.querySelector('.tooltip-desc');
+    
+    tooltipTitle.textContent = range.title || '오버레이 효과';
+    tooltipDesc.textContent = range.description || '효과 설명';
+    tooltipTime.textContent = `${range.start}s - ${range.end}s`;
+    
+    tooltip.classList.add('show');
+    updateTooltipPosition(e);
+  }
+
+  // 추가: 툴팁 숨김 함수
+  function hideTooltip() {
+    tooltip.classList.remove('show');
+  }
+
+  // 추가: 툴팁 위치 업데이트 함수
+  function updateTooltipPosition(e) {
+    const rect = document.querySelector('.timeline-container').getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    
+    const tooltipPercentage = (mouseX / rect.width) * 100;
+    
+    tooltip.style.left = `${tooltipPercentage}%`;
+    tooltip.style.transform = 'translateX(-50%)'; // 중앙 정렬
+    
+    tooltip.style.left = `${left}px`;
+  }
 
   function handlerPauseBtn(){
         if (pause)  {
@@ -66,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
   fileInput.addEventListener('change', () => {
       const file = fileInput.files[0];
       if(!file) return;
+      originalName = file.name; 
 
       const videoKey = file.name;
       const currentVideo = videoData[videoKey];
@@ -164,6 +201,11 @@ document.addEventListener('DOMContentLoaded', () => {
           bar.classList.add('timeline-bar');
           bar.style.left = `${(range.start / duration) * 100}%`;
           bar.style.width = `${((range.end - range.start) / duration) * 100}%`;
+          
+          bar.addEventListener('mouseenter', (e) => showTooltip(e, range));
+          bar.addEventListener('mouseleave', hideTooltip);
+          bar.addEventListener('mousemove', (e) => updateTooltipPosition(e));
+          
           // 삽입
           document.querySelector('.timeline-container').appendChild(bar);
     });
@@ -229,5 +271,56 @@ document.getElementById('dashboard-play').addEventListener('click', async () => 
     console.error(err);
     // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
     // alert('업로드 실패'); 
+  }
+});
+
+document.getElementById('dashboard-save').addEventListener('click', async () => {
+  const outputVideoEl = document.getElementById('outputVideo');
+  const videoSrc = outputVideoEl.src;
+
+  if (!videoSrc) {
+    alert("변환된 영상이 없습니다.");
+    return;
+  }
+
+  try {
+    const response = await fetch(videoSrc);
+    const blob = await response.blob();
+
+    // 다운로드 트리거
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    a.href = blobUrl;
+    a.download = `${originalName}_converted.mp4`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+
+    // localStorage에 이력 저장 추가
+    const fileName = a.download; // 위에서 설정한 이름 그대로 사용
+    const history = JSON.parse(localStorage.getItem("video_history") || "[]");
+    history.unshift({
+      title: fileName,
+      savedAt: timestamp,
+    });
+    localStorage.setItem("video_history", JSON.stringify(history));
+    console.log("저장 이력 추가 완료:", fileName);
+  } catch (error) {
+    console.error("영상 저장 실패:", error);
+    alert("영상 저장 중 오류가 발생했습니다.");
+  }
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  const userId = document.getElementById("user-id");
+
+  if (userId) {
+    userId.style.cursor = "pointer";
+
+    userId.addEventListener("click", () => {
+      window.location.href = "history.html";
+    });
   }
 });
