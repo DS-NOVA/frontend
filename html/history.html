@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NOVA History</title>
+  <link rel="stylesheet" href="../css/nav.css" />
+  <link rel="stylesheet" href="../css/history.css" />
+</head>
+<body>
+
+    <nav class="navbar">
+    <svg class="nav-background" viewBox="0 0 12383 1583" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+      <path d="M2021.19 1583C888.884 1583 -327.292 1333.24 -974 1212.81L-0.438171 -55H12400.8C12493.2 453.197 13885.5 1494.93 13663.9 1490.57C13225.4 1424.92 11174.3 1101.54 9626.67 1101.54C8079.08 1101.54 4026.82 1583 2021.19 1583Z" fill="#ECF3FF"></path>
+    </svg>
+    <div class="nav-content">
+      <div class="nav-left">
+        <img src="../img/logo.svg" alt="로고" class="nav_logo" />
+      </div>
+      <div class="nav-right">
+        <div class="non-user-profile" style="display: none;">
+          <span id="nav-sign-up" type="button">Sign up</span>
+          <span id="nav-log-in" type="button">Log in</span>
+        </div>
+        <div class="user-profile" style="display: flex; align-items: center; gap: 10px;">
+          <span id="user-id">duksung@gmail.com</span>
+          <img src="../img/user_img.png" class="user_img" />
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="content">
+      <h2 class="title">History</h2>
+      <p class="description">
+        그 동안 조회했던 영상 기록을 확인할 수 있습니다.<br>
+        또한, 특정 영상에 대한 피드백을 남겨주시면, AI 학습에 반영됩니다.
+      </p>
+
+      <div class="history-list" id="historyList">
+
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+      </div>
+
+      <div id="moreButtonWrapper" style="text-align: center; margin-top: 20px;">
+        <button id="showMoreBtn" class="feedback-btn">더 보기</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="feedbackModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">영상 이름</h3>
+        <button class="close-btn" onclick="closeModal()">×</button>
+      </div>
+      <div class="file-name">영상 제목</div>
+      <label class="feedback-label">내용</label>
+      <textarea class="feedback-textarea" placeholder="피드백을 입력하세요..."></textarea>
+      <button class="submit-btn" onclick="submitFeedback()">전송</button>
+      <div style="clear: both;"></div>
+    </div>
+  </div>
+<script src="../js/history.js"></script>
+</body>
+</html>
