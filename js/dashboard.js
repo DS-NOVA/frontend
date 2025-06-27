@@ -31,9 +31,10 @@ Object.defineProperty(window, 'WebSocket', {
   let overlayRanges = [];
   let currentOverlay = null;
 
+  let TestvideoData = {};
 
   //예제로 쓸 데이터 구조
-  const TestvideoData = {
+  /*const TestvideoData = {
     '26_lightning.mp4': {
       outputSrc: '../videos/26_lightning.mp4',
       fps: 30,
@@ -45,7 +46,7 @@ Object.defineProperty(window, 'WebSocket', {
         { start: 207, end: 268, overlaySrc: '../overlays/overlay_26_lightning_0207_0268.mp4' }
       ]
     }
-  }
+  }*/
 
   //오버레이를 위한 fps 구하기
   function frameToSeconds(frame, fps) {
@@ -57,8 +58,8 @@ Object.defineProperty(window, 'WebSocket', {
     console.log("saveRawFrameData 실행");
     const FrameToVideoData = {};
 
-    for (const [fileName, { outputSrc, fps, overlayRanges }] of Object.entries(rawFrameData)) {
-
+    for (const [fileName, { outputSrc, overlayRanges }] of Object.entries(rawFrameData)) {
+        /*
       const overlay = await Promise.all(
       overlayRanges.map(async ({ start, overlaySrc }) => {
         const startSec = frameToSeconds(start, fps);
@@ -69,12 +70,11 @@ Object.defineProperty(window, 'WebSocket', {
           overlaySrc
         };
       })
-    );
+    );*/
 
-
-      FrameToVideoData[fileName] = {
+    FrameToVideoData[fileName] = {
         outputSrc,
-        overlayRanges:overlay
+        overlayRanges
       };
     }
 
@@ -82,6 +82,7 @@ Object.defineProperty(window, 'WebSocket', {
   }
 
   //종료 시점 구하기(추후 수정)
+  /*
   function getOverlayDuration(overlaySrc) {
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
@@ -91,7 +92,7 @@ Object.defineProperty(window, 'WebSocket', {
       video.onloadedmetadata = () => resolve(video.duration);
       video.onerror = () => reject(`영상 로딩 실패: ${overlaySrc}`);
     });
-}
+}*/
 
 //정지 버튼 눌렀을때
   function handlerPauseBtn(){
@@ -99,22 +100,23 @@ Object.defineProperty(window, 'WebSocket', {
     console.log("click start");
     outputVideo.play().then(() => {
       const currentTime = outputVideo.currentTime;
-      let activeRange = null;
+      const activeRange = overlayRanges.find(range =>
+        currentTime >= range.start && currentTime <= range.end
+      );
 
-      //오버레이 시점이 아닌 경우
-      if (!currentOverlay) {
-        activeRange = overlayRanges.find(range =>
-          Math.abs(currentTime - range.start) <= 0.1
-        );
-      }
-      //해당 범위에 해당하는 경우 
       if (activeRange) {
-        overlayVideo.style.opacity = "1";
-        overlayVideo.currentTime = currentTime - activeRange.start;
-        overlayVideo.play();
+        overlayVideo.src = activeRange.overlaySrc;
+        overlayVideo.load();
+        overlayVideo.onloadeddata = () => {
+          overlayVideo.currentTime = currentTime - activeRange.start;
+          overlayVideo.style.opacity = "1";
+          overlayVideo.play().catch(e => {
+            console.warn("Overlay autoplay failed:", e);
+          });
+        };
       }
 
-      pause = false; // 성공한 경우에만 상태 변경
+      pause = false;
     }).catch(e => {
       console.log('Autoplay prevented:', e);
     });
@@ -190,27 +192,33 @@ Object.defineProperty(window, 'WebSocket', {
   });
 
   container.onclick = e => {
-    const rect = container.getBoundingClientRect();
-    const percent = (e.clientX - rect.left) / rect.width;
-    const clickTime = percent * duration;
+  const rect = container.getBoundingClientRect();
+  const percent = (e.clientX - rect.left) / rect.width;
+  const clickTime = percent * duration;
 
-    pause = false;
-    outputVideo.currentTime = clickTime;
+  pause = false;
+  outputVideo.currentTime = clickTime;
 
-    const activeRange = overlayRanges.find(r => clickTime >= r.start && clickTime <= r.end);
-    if (activeRange) {
-      overlayVideo.src = activeRange.overlaySrc;
-      overlayVideo.load();
+  const activeRange = overlayRanges.find(r => clickTime >= r.start && clickTime <= r.end);
+  if (activeRange) {
+    overlayVideo.src = activeRange.overlaySrc;
+    overlayVideo.load();
+
+    overlayVideo.onloadeddata = () => {
       overlayVideo.currentTime = clickTime - activeRange.start;
       overlayVideo.style.opacity = "1";
-      outputVideo.play();
-    } else {
-      overlayVideo.pause();
-      overlayVideo.src = "";
-      overlayVideo.style.opacity = "0";
-    }
-  };
-}
+
+      overlayVideo.play().catch(e => {
+        console.warn("Overlay play error:", e);
+      });
+    };
+  } else {
+    overlayVideo.pause();
+    overlayVideo.src = "";
+    overlayVideo.style.opacity = "0";
+  }
+};
+  }
 
 function setupTimeUpdateHandler() {
   if (handlerTimeUpdate) {
@@ -235,6 +243,8 @@ function setupTimeUpdateHandler() {
           overlayVideo.currentTime = offset;
           overlayVideo.style.opacity = "1";
           currentOverlay = activeRange;
+
+          overlayVideo.play().catch(err => console.warn("Overlay autoplay 실패:", err));
         };
       } else {
         overlayVideo.currentTime = offset;
@@ -292,6 +302,12 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
     console.log(result);
     alert(result.message);
 
+    TestvideoData[file.name] = {
+      outputSrc: result.outputSrc,
+      fps: result.fps,
+      overlayRanges: result.overlays
+    };
+    
     await handleVideoAfterUpload(file);
     console.log("inputVideo.src:", inputVideo.src);
     console.log("outputVideo.src:", outputVideo.src);
