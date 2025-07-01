@@ -266,6 +266,7 @@ document.getElementById('dashboard-play').addEventListener('click', async () => 
     const result = await response.json();
     
     console.log(result);
+    window.conversionResult = result; 
     alert(result.message);
   } catch (err) {
     console.error(err);
@@ -277,12 +278,15 @@ document.getElementById('dashboard-play').addEventListener('click', async () => 
 document.getElementById('dashboard-save').addEventListener('click', async () => {
   const outputVideoEl = document.getElementById('outputVideo');
   const videoSrc = outputVideoEl.src;
+  const conversionResult = window.conversionResult;
 
   if (!videoSrc) {
     alert("변환된 영상이 없습니다.");
     return;
   }
 
+
+  //저장 성공하면 mp4 다운로드 실행
   try {
     const response = await fetch(videoSrc);
     const blob = await response.blob();
