@@ -285,6 +285,29 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
     return;
   }
 
+  // MongoDB 저장 요청
+  try {
+    const saveRes = await fetch("/nova/dashboard/save/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(conversionResult)
+    });
+
+    const saveData = await saveRes.json();
+    if (saveRes.ok) {
+      console.log("MongoDB 저장 성공:", saveData);
+      alert(`${saveData.message}`);
+    } else {
+      alert(`MongoDB 저장 실패: ${saveData.detail}`);
+      return;
+    }
+  } catch (error) {
+    console.error("MongoDB 저장 오류:", error);
+    alert("MongoDB 저장 중 오류가 발생했습니다!");
+    return;
+  }
 
   //저장 성공하면 mp4 다운로드 실행
   try {
