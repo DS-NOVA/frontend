@@ -32,7 +32,8 @@ body {
     display: flex;
     flex-direction: column; 
     justify-content: center; 
-    align-items: center;        
+    align-items: center; 
+    /*margin-bottom: 5%;*/  /*16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.*/     
 }
 
 #signup-logo {
@@ -72,5 +73,38 @@ body {
   background-color: var(--color-main-blue);
   color: white;
   font-size: 100%;
-  
 }
+
+/*16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.*/
+/*
+.profile-preview {
+      position: relative;
+      cursor: pointer;
+      width: 120px;
+      height: 120px;
+    }
+
+    .profile-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #ddd;
+    }
+
+    .camera-icon {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      background: #fff;
+      border-radius: 50%;
+      padding: 3px;
+      border: 1px solid #ccc;
+    }
+
+    .camera-icon img {
+      width: 20px;
+      height: 20px;
+      display: block;
+    }
+      */
