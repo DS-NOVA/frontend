@@ -27,7 +27,8 @@ document.getElementById('login-btn').addEventListener('click', async (e) => {
     if (response.ok) {
       // 로그인 성공 시에만 이동
       window.location.href = 'dashboard.html';
-      localStorage.setItem("accessToken", result.access_token); //추후 httpOnly 쿠키 (백엔드) 로 변경
+      localStorage.setItem("access_token", result.access_token); //추후 httpOnly 쿠키 (백엔드) 로 변경
+      localStorage.setItem("user_email", result.user.user_email);
     } else {
       alert(result.message || '로그인 실패');
     }
