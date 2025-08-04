@@ -30,16 +30,35 @@
 
             <form class="signup-form">
                 <h1>회원가입</h1>
-                <input type="username" placeholder="이름" required />
-                <input type="email" placeholder="이메일" required />
-                <input type="password" placeholder="비밀번호" minlength=6 required />
+                <!--16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.
+                <label for="profile-image-input">
+                <div class="profile-preview">
+                    
+                <img id="profile-image-preview" src="../img/user_img.png" alt="프로필 이미지">
+                    
+                <div class="camera-icon">
+                    <img src="https://cdn-icons-png.flaticon.com/512/685/685655.png" alt="카메라 아이콘">
+                </div>
+                </div>
+            </label>
+
+                
+            <input type="file" name="profile_image" id="profile-image-input" accept="image/*" style="display: none;" />
+
+            -->
+                <input type="username" placeholder="이름" required id="username"/>
+                <input type="email" placeholder="이메일" required id="email"/>
+                <input type="password" placeholder="비밀번호" minlength=6 required id="password" />
                 <p class="login-link">계정이 있으신가요? <a href="login.html">로그인</a></p>
                 
                 <button type="submit" id="signup-btn">회원가입</button>
             </form>
 
         </main>
-
+        <!--
+        16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.
+    <script src="../js/signup.js"></script>
+    !-->
+    <script src="../js/signup.js"></script>
     </body>
-
 </html>
