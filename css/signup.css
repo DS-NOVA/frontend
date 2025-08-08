@@ -33,7 +33,7 @@ body {
     flex-direction: column; 
     justify-content: center; 
     align-items: center; 
-    /*margin-bottom: 5%;*/  /*16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.*/     
+    margin-bottom: 5%;
 }
 
 #signup-logo {
@@ -75,8 +75,6 @@ body {
   font-size: 100%;
 }
 
-/*16번 pr과 다른 내용. 회원가입 프로필 설정과 관련된 내용. 추후 해당 이슈로 옮길 예정입니다.*/
-/*
 .profile-preview {
       position: relative;
       cursor: pointer;
@@ -107,4 +105,3 @@ body {
       height: 20px;
       display: block;
     }
-      */
