@@ -74,14 +74,13 @@ section{
   background-color: #0056b3;
 }
 
-.video{
-  position:absolute;
+.video {
+  position: relative;
   left: 20%;
-  display: flex; 
-  justify-content: space-between;  
-  align-items: flex-start; 
-  gap: 10px; 
+  display: flex;
+  gap: 10px;
 }
+
 
 .timeline{
   bottom: 10%;
@@ -219,4 +218,15 @@ section{
     font-size: 10px;
     color: #ffcc00;
     font-weight: bold;
+}
+
+.timeline-bar.deselected {
+  background-color: rgba(100, 100, 100, 0.3);
+}
+
+.graph {
+  width: 100%;
+  padding: 0 50px;
+  box-sizing: border-box;
+  overflow-x: auto;
 }
