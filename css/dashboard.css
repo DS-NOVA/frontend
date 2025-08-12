@@ -224,9 +224,35 @@ section{
   background-color: rgba(100, 100, 100, 0.3);
 }
 
+/* 그래프 */
 .graph {
   width: 100%;
   padding: 0 50px;
   box-sizing: border-box;
   overflow-x: auto;
+  margin-bottom: 30px;
 }
+
+#graph-container {
+  border-radius: 15px;
+  overflow: hidden;
+  background: #5287EA;
+}
+
+#graph-container .apexcharts-canvas,
+#graph-container .apexcharts-svg,
+#graph-container .apexcharts-inner {
+  border-radius: inherit;
+  display: block;
+  overflow: hidden;
+}
+
+#graph-container .apexcharts-toolbar { /* toolbar만 흰색 */
+  color: white !important;
+}
+
+#graph-container .apexcharts-toolbar svg {
+  fill: white !important;
+}
+
+

@@ -115,11 +115,11 @@ document.getElementById("dashboard-play").addEventListener("click", async () => 
     //   method: "POST",
     //   body: formData
     // });
-    const res = await fetch("../data/test_data.json"); // test 데이터 연결
+    const res = await fetch("../data/test_data.json"); // test 데이터 연결 (추후 수정 필요)
 
     const result = await res.json();
     // overlayRanges = result.overlays;
-    overlayRanges = result // test 데이터 연결
+    overlayRanges = result // test 데이터 연결 (그래프 test 위해서 - 추후 수정 필요)
 
     inputVideo.src = URL.createObjectURL(file);
     currentInputURL = result.originalSrc || inputVideo.src;
@@ -203,6 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// 그래프
 function renderRiskChart() {
   const baseDate = new Date().toISOString().split("T")[0];
 
@@ -241,8 +242,24 @@ function renderRiskChart() {
     chart: {
       type: 'area',
       height: 300,
-      stacked: true
+      stacked: false,
+      background: 'transparent',
+      toolbar: { show: true },
     },
+
+    grid: {
+    padding: { top: 8, right: 12, bottom: 12, left: 12 }
+    },
+
+    legend: {
+      position: 'top', horizontalAlign: 'left'
+    },
+
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => (val * 100).toFixed(2), // 예: 33.33
+    },
+
     series: [
       { name: "섬광", data: seriesData["섬광"] },
       { name: "패턴", data: seriesData["패턴"] },
@@ -255,12 +272,18 @@ function renderRiskChart() {
     yaxis: {
       min: 0,
       max: 1,
-      title: { text: "위험 비율" }
+      title: { text: "위험 비율" },
+      labels: {
+        formatter: (val) => Number(val).toFixed(3)
+  }
     },
     tooltip: {
-      x: { format: "HH:mm:ss" }
+      x: { format: "HH:mm:ss" },
+      y: {
+        formatter: (val) => `${(Number(val) * 100).toFixed(1)}%`
+      }
     },
-    colors: ['#FF5F5F', '#F9C74F', '#90BE6D']
+    colors: ['#FF78AA', '#5AED9C', '#FFEC5A']
   };
 
   const chart = new ApexCharts(document.querySelector("#graph"), options);
