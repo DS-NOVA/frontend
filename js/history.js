@@ -1,3 +1,4 @@
+import { API_BASE } from './auth.js';
 // 전역 변수
 let currentVideoTitle = '';
 
@@ -41,7 +42,7 @@ async function submitFeedback() {
     };
 
     // API 호출
-    const response = await fetch('http://127.0.0.1:8000/nova/auth/feedback', {
+    const response = await fetch(`${API_BASE}/nova/auth/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -178,7 +179,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // 히스토리 저장 함수
 async function saveHistory(videoId, token) {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/nova/history/${videoId}`, {
+    const response = await fetch(`${API_BASE}/nova/history/${videoId}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -201,7 +202,7 @@ async function loadHistory(token, userVideoIds) {
   historyList.innerHTML = "";
 
   for (const videoId of userVideoIds) {
-    const res = await fetch(`http://127.0.0.1:8000/nova/history/${videoId}`, {
+    const res = await fetch(`${API_BASE}/nova/history/${videoId}`, {
       headers: {
         'Authorization': `Bearer ${token}`}
     });
@@ -215,7 +216,7 @@ async function loadHistory(token, userVideoIds) {
 }
 
 async function deleteHistory(videoId, token) {
-  const res = await fetch(`http://127.0.0.1:8000/nova/history/${videoId}`, {
+  const res = await fetch(`${API_BASE}/nova/history/${videoId}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`

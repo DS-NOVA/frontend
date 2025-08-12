@@ -1,4 +1,6 @@
-const fileInput = document.getElementById("profile-image-input");
+import { API_BASE } from './auth.js';
+
+const fileInput = document.getElementById("user_image");
 const previewImage = document.getElementById("profile-image-preview");
 
 previewImage.addEventListener("click", () => {
@@ -22,14 +24,15 @@ document.getElementById('signup-btn').addEventListener('click', async (e) => {
     //회원가입 버튼 눌렀을 때
     //필드가 다 채워졌는지 2차 확인
     console.log("버튼 클릭");
-    const username = document.getElementById('username').value; 
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const file = document.getElementById('profile-image-input').files[0];
+    const username = document.getElementById('user_name').value; 
+    const email = document.getElementById('user_email').value;
+    const password = document.getElementById('user_password').value;
+    const file = document.getElementById('user_image').files[0];
 
     if(!username || !email || password.length < 6){
         e.preventDefault();
         alert("모든 필드를 바르게 입력해주세요.");
+        return;
     }
 
     const formData = new FormData();
@@ -42,7 +45,7 @@ document.getElementById('signup-btn').addEventListener('click', async (e) => {
 
     //백엔드 연동하기 (토큰 필요 없음)
     try {
-        const response = await fetch('http://127.0.0.1:8000/nova/auth/signup', {
+        const response = await fetch(`${API_BASE}/nova/auth/signup`, {
         method: 'POST',
         body: formData
         });
@@ -51,7 +54,7 @@ document.getElementById('signup-btn').addEventListener('click', async (e) => {
         if (response.ok) {
             // 회원가입 성공 시에만 이동
             console.log("회원가입 성공");
-            window.location.href = 'login.html';
+            window.location.href = '/html/login.html';
         } else {
             console.warn("회원가입 실패 응답:", result); 
             alert(result.detail || "회원가입 실패");
