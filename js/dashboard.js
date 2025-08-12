@@ -1,4 +1,4 @@
-import { API_BASE } from './auth.js';
+import { API_BASE, ensureAccess, authFetch } from './auth.js';
 // dashboard.js 최상단 또는 dashboard.html <script>에 추가
 if (window.LiveReloadBlocked !== true) {
   const originalReload = window.location.reload;
@@ -126,11 +126,9 @@ Object.defineProperty(window, 'WebSocket', {
 // 히스토리 저장
 async function saveHistory(videoId, token) {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/nova/history/${videoId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
+    await ensureAccess();
+    const response = await authFetch(`${API_BASE}/nova/history/${encodeURIComponent(videoId)}`, {
+      method: "POST"
     });
 
     if (!response.ok) {
@@ -445,7 +443,8 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
 });
 
   try {
-    const response = await fetch(`${API_BASE}/nova/dashboard/video/upload/`, {
+    await ensureAccess();
+    const response = await authFetch(`${API_BASE}/nova/dashboard/video/upload/`, {
       method: 'POST',
       body: formData,
     });
