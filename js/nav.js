@@ -1,42 +1,74 @@
+import { ensureAccess, authFetch, API_BASE } from './auth.js';
 
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("Frontend loaded!");
-});
+//로그인 아닌 경우
+function showGuest() {
+  document.querySelector('.user-profile')?.style.setProperty('display', 'none');
+  document.querySelector('.non-user-profile')?.style.removeProperty('display');
 
-// 공통 컴포넌트 로드
-function loadComponent(id, url) {
-  fetch(url)
-    .then(response => response.text())
-    .then(data => {
-      document.getElementById(id).innerHTML = data;
+  document.getElementById('nav-log-in')?.addEventListener('click', () => {
+    window.location.href = '/html/login.html';
+  });
+  document.getElementById('nav-sign-up')?.addEventListener('click', () => {
+    window.location.href = '/html/signup.html';
+  });
+}
+//로그인 된 경우
+function showUser(email) {
+  document.querySelector('.non-user-profile')?.style.setProperty('display', 'none');
+  document.querySelector('.user-profile')?.style.removeProperty('display');
 
-      //로고 클릭 시 이동
-      const logo = document.getElementById('nav_logo');
-      if (logo) {
-        logo.addEventListener('click', function () {
-          console.log("로고 클릭");
-          window.location.href = "main.html";
-        });
-      }
+  const el = document.getElementById('user-id');
+  if (el) el.textContent = email || 'User';
 
-        //로그인 유무에 따른 분기 
-        if(!isLoggedIn()){
-          //로그인이 되어있지 않을 경우 sign in/ log in이 보여야 함 
-          document.querySelector('.user-profile').style.display = 'none'; 
-
-          document.getElementById('nav-log-in').addEventListener('click', function(){
-            window.location.href='login.html';
-            });
-          document.getElementById('nav-sign-up').addEventListener('click', function(){
-            window.location.href='signup.html';
-            });
-        }else{
-          //로그인이 되어있을 경우 id가 보이게끔 함
-          document.querySelector('.non-user-profile').style.display = 'none';
-          document.getElementById('user-id').textContent = getEmail();
-        }
+  const history = document.getElementById('nav-history');
+  if (history && !history.dataset.bound) {
+    history.dataset.bound = '1';
+    history.addEventListener('click', () => {
+      window.location.href = '/html/history.html'; // 경로 다르면 여기만 바꿔주세요
     });
+  }
+
+  const btn = document.getElementById('nav-logout');
+  if (btn && !btn.dataset.bound) {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', async () => {
+      await authFetch(`${API_BASE}/nova/auth/logout`, { method: 'POST' }).catch(()=>{});
+      window.ACCESS_TOKEN = null;
+      window.location.replace('/html/main.html');
+    });
+  }
+}
+//로고 클릭 시 이동
+function clickLogo(){
+  document.getElementById('nav_logo').addEventListener('click', async() => {
+    window.location.href = '/html/main.html';
+  });
 }
 
-loadComponent('nav', 'nav.html'); 
+async function bootNavLogic() {
+  showGuest();
+  try {
+    await ensureAccess();                 // 필요할 때만 refresh (CSRF 없으면 패스)
+    if (!window.ACCESS_TOKEN) return;     // 비로그인 → 게스트 유지
+    const resp = await authFetch(`${API_BASE}/nova/auth/me`);//여기 경로 추후 수정!!
+    if (!resp.ok) return;
+    const data = await resp.json();
+    showUser(data?.user?.user_email);
+  } catch {}
+}
 
+//처음 동작하는 함수
+async function mountNav() {
+  const host = document.getElementById('nav');
+  if (!host) return;
+  const res = await fetch('/html/nav.html');
+  if (!res.ok) return;
+  host.innerHTML = await res.text();
+  clickLogo();
+  await bootNavLogic();
+}
+
+
+document.addEventListener('DOMContentLoaded', async () => {
+  await mountNav();
+});

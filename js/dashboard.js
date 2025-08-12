@@ -1,3 +1,4 @@
+import { API_BASE } from './auth.js';
 // dashboard.js 최상단 또는 dashboard.html <script>에 추가
 if (window.LiveReloadBlocked !== true) {
   const originalReload = window.location.reload;
@@ -426,7 +427,7 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
 });
 
   try {
-    const response = await fetch('http://127.0.0.1:8000/nova/dashboard/video/upload/', {
+    const response = await fetch(`${API_BASE}/nova/dashboard/video/upload/`, {
       method: 'POST',
       body: formData,
     });

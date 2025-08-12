@@ -1,3 +1,4 @@
+import { API_BASE } from './auth.js';
 // 전역 변수
 let currentVideoTitle = '';
 
@@ -39,7 +40,7 @@ async function submitFeedback() {
     };
 
     // API 호출
-    const response = await fetch('http://127.0.0.1:8000/nova/auth/feedback', {
+    const response = await fetch(`${API_BASE}/nova/auth/feedback`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
