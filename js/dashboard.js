@@ -88,8 +88,6 @@ Object.defineProperty(window, 'WebSocket', {
     
     tooltip.style.left = `${tooltipPercentage}%`;
     tooltip.style.transform = 'translateX(-50%)'; // 중앙 정렬
-    
-    tooltip.style.left = `${left}px`;
   }
 
   function handlerPauseBtn(){
@@ -124,6 +122,26 @@ Object.defineProperty(window, 'WebSocket', {
     pause = true;
   }
           
+}
+// 히스토리 저장
+async function saveHistory(videoId, token) {
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/nova/history/${videoId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("히스토리 저장 실패:", errorText);
+    } else {
+      console.log("히스토리 저장 성공");
+    }
+  } catch (err) {
+    console.error("히스토리 저장 중 오류:", err);
+  }
 }
 
 //play 버튼 이후에 실행되어야 하는 함수
@@ -440,19 +458,33 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
     TestvideoData[file.name] = {
       outputSrc: result.outputSrc,
       fps: result.fps,
-      overlayRanges: result.overlays
+      overlayRanges: result.overlays,
+      videoId: parseInt(result.video_id)
     };
     
     await handleVideoAfterUpload(file);
     console.log("inputVideo.src:", inputVideo.src);
     console.log("outputVideo.src:", outputVideo.src);
-    
+
   } catch (err) {
     console.error(err);
     // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
     // alert('업로드 실패'); 
   }
 });
+
+// 원본 영상 다운로드 (테스트용)
+function mapFileNameToId(fileName) {
+    const cleanedName = fileName
+    .replace("_converted", "")
+    .replace(".mp4", "")
+    .trim();
+
+  const map = {
+    "4_firetruck_flash": 2,   
+  };
+  return map[cleanedName];
+}
 
 window.addEventListener('beforeunload', (e) => {
   console.warn('🚨 페이지 unload 발생!');
@@ -468,11 +500,18 @@ window.addEventListener('beforeunload', (e) => {
 });
 
 document.getElementById('dashboard-save').addEventListener('click', async () => {
+  const btn = document.getElementById('dashboard-save'); 
+  if (btn.dataset.busy === '1') return;
+  btn.dataset.busy = '1';
+  btn.disabled = true;
+  
   const outputVideoEl = document.getElementById('outputVideo');
   const videoSrc = outputVideoEl.src;
 
   if (!videoSrc) {
     alert("변환된 영상이 없습니다.");
+    btn.dataset.busy = '0';                                
+    btn.disabled = false;
     return;
   }
 
@@ -493,16 +532,39 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
 
     // localStorage에 이력 저장 추가
     const fileName = a.download; // 위에서 설정한 이름 그대로 사용
+
+    // 히스토리 저장 (테스트)
+    //const rawId = parseInt(TestvideoData[originalName]?.videoId);
+    //const videoId = typeof rawId === "string" ? parseInt(rawId) : rawId;
+
+    //let token = localStorage.getItem("access_token");
+    //if (!token) {
+    //  token="";
+    //}
+    //console.log("히스토리 저장 시도:", { videoId, token: token ? '***' : null });
+
+     //if (videoId && !isNaN(videoId) && token) {
+    //  await saveHistory(videoId, token);
+    //  console.log("히스토리 저장 완료");
+    //} else {
+    //  console.warn("토큰 또는 videoId가 유효하지 않아 히스토리 건너뜀");
+    //}
+
     const history = JSON.parse(localStorage.getItem("video_history") || "[]");
     history.unshift({
       title: fileName,
+      video_id: videoId,
       savedAt: timestamp,
     });
     localStorage.setItem("video_history", JSON.stringify(history));
-    console.log("저장 이력 추가 완료:", fileName);
+    console.log("로컬 저장 완료:", fileName);
+
   } catch (error) {
     console.error("영상 저장 실패:", error);
     alert("영상 저장 중 오류가 발생했습니다.");
+  } finally {
+    btn.dataset.busy = '0';
+    btn.disabled = false;
   }
 });
 
@@ -518,5 +580,13 @@ document.addEventListener("DOMContentLoaded", () => {
     userId.addEventListener("click", () => {
       window.location.href = "history.html";
     });
+  }
+});
+// 사용자가 업로드한 원본 파일 이름으로 저장
+document.getElementById('videoInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    originalName = file.name;
+    console.log("originalName 세팅됨:", originalName);
   }
 });
