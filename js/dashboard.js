@@ -1,12 +1,18 @@
 import { API_BASE, ensureAccess, authFetch } from './auth.js';
 // dashboard.js 최상단 또는 dashboard.html <script>에 추가
-if (window.LiveReloadBlocked !== true) {
-  const originalReload = window.location.reload;
-  window.location.reload = function () {
-    console.warn('LiveReload 금지');
-    return;
-  };
-  window.LiveReloadBlocked = true;
+
+  if (window.LiveReloadBlocked !== true) {
+  try {
+    Object.defineProperty(window, 'WebSocket', {
+      configurable: true, // 나중에 복구 가능하도록
+      get() {
+        console.warn("WebSocket 차단 (LiveReload용)");
+        return function () {}; // 더미
+      },
+    });
+  } catch (e) {
+    console.warn("WebSocket 재정의 실패:", e);
+  }
 }
 
 Object.defineProperty(window, 'WebSocket', {
@@ -16,6 +22,11 @@ Object.defineProperty(window, 'WebSocket', {
   },
 });
 
+  const splashEl = document.getElementById('detect-splash');
+  function showDetectSplash() { if (splashEl) splashEl.hidden = false; }
+  function hideDetectSplash() { if (splashEl) splashEl.hidden = true; }
+
+  document.addEventListener('DOMContentLoaded', hideDetectSplash);
 
   const uploadButton = document.getElementById('dashboard-upload');
   const fileInput = document.getElementById('videoInput');
@@ -36,7 +47,6 @@ Object.defineProperty(window, 'WebSocket', {
   let TestvideoData = {};
 
   let originalName = '';
-
 
   //오버레이를 위한 fps 구하기
   function frameToSeconds(frame, fps) {
@@ -438,9 +448,8 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
 
   const formData = new FormData();
   formData.append('video', file);
-  formData.forEach((value, key) => {
-  console.log(`${key}:`, value);
-});
+  
+  showDetectSplash();
 
   try {
     await ensureAccess();
@@ -450,9 +459,6 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
     });
 
     const result = await response.json();
-    
-    console.log(result);
-    alert(result.message);
 
     TestvideoData[file.name] = {
       outputSrc: result.outputSrc,
@@ -460,18 +466,18 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
       overlayRanges: result.overlays,
       videoId: parseInt(result.video_id)
     };
-    
-    await handleVideoAfterUpload(file);
-    console.log("inputVideo.src:", inputVideo.src);
-    console.log("outputVideo.src:", outputVideo.src);
 
+    await handleVideoAfterUpload(file);
   } catch (err) {
     console.error(err);
-    // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
-    // alert('업로드 실패'); 
+  } finally {
+    // 🔵 스플래시 OFF: 성공/실패 무관하게 종료
+    hideDetectSplash();
   }
 });
-
+    // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
+    // alert('업로드 실패'); 
+  
 // 원본 영상 다운로드 (테스트용)
 function mapFileNameToId(fileName) {
     const cleanedName = fileName
@@ -487,15 +493,6 @@ function mapFileNameToId(fileName) {
 
 window.addEventListener('beforeunload', (e) => {
   console.warn('🚨 페이지 unload 발생!');
-});
-
-['assign', 'replace'].forEach(method => {
-  const original = window.location[method];
-  window.location[method] = function(...args) {
-    console.warn(`🚨 location.${method} called with:`, ...args);
-    debugger;
-    return original.apply(this, args);
-  }
 });
 
 document.getElementById('dashboard-save').addEventListener('click', async () => {
@@ -532,22 +529,22 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
     // localStorage에 이력 저장 추가
     const fileName = a.download; // 위에서 설정한 이름 그대로 사용
 
-    // 히스토리 저장 (테스트)
-    //const rawId = parseInt(TestvideoData[originalName]?.videoId);
-    //const videoId = typeof rawId === "string" ? parseInt(rawId) : rawId;
+    //히스토리 저장 (테스트)
+    const rawId = parseInt(TestvideoData[originalName]?.videoId);
+    const videoId = typeof rawId === "string" ? parseInt(rawId) : rawId;
 
-    //let token = localStorage.getItem("access_token");
-    //if (!token) {
-    //  token="";
-    //}
-    //console.log("히스토리 저장 시도:", { videoId, token: token ? '***' : null });
+    let token = localStorage.getItem("access_token");
+    if (!token) {
+      token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZXhwIjoxNzU0NzU5NzU0fQ.9yQ5u0rZUvQJUHdtpdfMLbbJrBnfTJFuBsgp5Ca3a_s";
+    }
+    console.log("히스토리 저장 시도:", { videoId, token: token ? '***' : null });
 
-     //if (videoId && !isNaN(videoId) && token) {
-    //  await saveHistory(videoId, token);
-    //  console.log("히스토리 저장 완료");
-    //} else {
-    //  console.warn("토큰 또는 videoId가 유효하지 않아 히스토리 건너뜀");
-    //}
+     if (videoId && !isNaN(videoId) && token) {
+      await saveHistory(videoId, token);
+      console.log("히스토리 저장 완료");
+    } else {
+      console.warn("토큰 또는 videoId가 유효하지 않아 히스토리 건너뜀");
+    }
 
     const history = JSON.parse(localStorage.getItem("video_history") || "[]");
     history.unshift({
