@@ -16,7 +16,6 @@
     </header>
 
     <main class="main-content">
-
       <!-- 영상 업로드 영역 -->
       <section class="upload">
         <input type="file" id="videoInput" name="video" accept="video/*" style="display: none;" />
@@ -30,8 +29,26 @@
         </div>
       </section>
 
-      <section class="video">
+            <div class="content-wrapper">
+        <div class="guidelines-section">
+          <h2 class="guidelines-title">Guidelines</h2>
+          <ul class="guidelines-list">
+            <li class="guidelines-item">
+              <div class="guidelines-bullet"></div>
+              <span>휘도차 20cd/m² 이상 면적이 큰 섬광</span>
+            </li>
+            <li class="guidelines-item">
+              <div class="guidelines-bullet"></div>
+              <span>초당 3회 이상·적색 비율 0.8 이상</p>변화량 20 이상 적색 섬광 금지</span>
+            </li>
+            <li class="guidelines-item">
+              <div class="guidelines-bullet"></div>
+              <span>밝고 어두운 줄무늬 5쌍 이상</span>
+            </li>
+          </ul>
+        </div>
 
+        <div class="video-section">
         <!-- 변환 전 영상이 보여지는 영역 -->
         <div class="input">
           <small>영상 변환 전</small>
@@ -59,14 +76,12 @@
             <video id="overlayVideo" width="100%" height="450" style="opacity: 0;" muted autoplay playsinline></video>
             <video id="outputVideo" width="100%" height="450" muted autoplay playsinline></video>
           </div>
-          </div>
-        
-      </section>
-      
-
+        </div>
+      </div>
+    </div>
     </main>
     <script type="module" src="../js/auth_dashboard.js"></script>
     <script type="module" src="../js/nav.js"></script>
-    <!--<script src="../js/dashboard.js"></script> 임시 주석 처리-->
+    <script type="module" src="../js/dashboard.js"></script>
   </body>
 </html>
