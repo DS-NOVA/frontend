@@ -22,10 +22,30 @@ Object.defineProperty(window, 'WebSocket', {
   },
 });
 
-  const splashEl = document.getElementById('detect-splash');
-  function showDetectSplash() { if (splashEl) splashEl.hidden = false; }
-  function hideDetectSplash() { if (splashEl) splashEl.hidden = true; }
+    const splashEl = document.getElementById('detect-splash');
+  let splashTimeout = null;
 
+  function showDetectSplash() { 
+      console.log('스플래시 표시');
+      if (splashEl) {
+          splashEl.hidden = false;
+      }
+      if (splashTimeout) clearTimeout(splashTimeout);
+      splashTimeout = setTimeout(() => {
+          console.warn('스플래시 강제 숨김 (타임아웃)');
+          hideDetectSplash();
+      }, 30000);
+  }
+
+  function hideDetectSplash() { 
+      console.log('스플래시 숨김');
+      if (splashTimeout) {
+          clearTimeout(splashTimeout);
+          splashTimeout = null;
+      }
+      if (splashEl) splashEl.hidden = true;
+  }
+  
   document.addEventListener('DOMContentLoaded', hideDetectSplash);
 
   const uploadButton = document.getElementById('dashboard-upload');
@@ -484,7 +504,7 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
   } catch (err) {
     console.error(err);
   } finally {
-    // 🔵 스플래시 OFF: 성공/실패 무관하게 종료
+    // 스플래시 OFF: 성공/실패 무관하게 종료
     hideDetectSplash();
   }
 });
@@ -548,7 +568,7 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
 
     let token = localStorage.getItem("access_token");
     if (!token) {
-      token="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZXhwIjoxNzU0NzU5NzU0fQ.9yQ5u0rZUvQJUHdtpdfMLbbJrBnfTJFuBsgp5Ca3a_s";
+      token="";
     }
     console.log("히스토리 저장 시도:", { videoId, token: token ? '***' : null });
 
