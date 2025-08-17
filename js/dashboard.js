@@ -460,6 +460,19 @@ function setupTimeUpdateHandler() {
 document.getElementById('dashboard-play').addEventListener('click', async (e) => {
   e.preventDefault();
   e.stopPropagation();
+
+  //우선 Graph 랜더링 보여지게 해 놓음 (추후 수정 필요)
+  try {
+    const testResp = await fetch("/data/test_data.json");
+    const testData = await testResp.json();
+
+    console.log("✅ testData 불러옴:", testData); // ← 반드시 떠야 함
+      
+    RiskGraph(testData); //testdata 연결, 추후 수정 필요
+  } catch (err) {
+    console.error("Graph 렌더링 실패:", err);
+  }
+
   const file = document.getElementById('videoInput').files[0];
   if (!file) {
     alert('파일을 선택해주세요');
@@ -559,7 +572,7 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
     }
     console.log("히스토리 저장 시도:", { videoId, token: token ? '***' : null });
 
-     if (videoId && !isNaN(videoId) && token) {
+    if (videoId && !isNaN(videoId) && token) {
       await saveHistory(videoId, token);
       console.log("히스토리 저장 완료");
     } else {
@@ -606,3 +619,93 @@ document.getElementById('videoInput').addEventListener('change', (e) => {
     console.log("originalName 세팅됨:", originalName);
   }
 });
+
+// 그래프
+function RiskGraph(data) {
+  const graphContainer = document.querySelector("#graph");
+  graphContainer.innerHTML = ""; // 기존 그래프 초기화
+
+  const baseDate = new Date().toISOString().split("T")[0];
+
+  const seriesData = {
+    "섬광": [],
+    "패턴": [],
+    "단색": []
+  };
+
+  data.forEach((range) => {
+    const time = new Date(`${baseDate}T00:00:00Z`);
+    time.setSeconds(time.getSeconds() + range.start);
+    const isoTime = time.toISOString();
+
+    const labels = range.labels || [];
+    const groups = {
+      "섬광": [0, 2, 3, 6],
+      "패턴": [4, 5, 7],
+      "단색": [1, 3, 8]
+    };
+
+    let counts = { "섬광": 0, "패턴": 0, "단색": 0 };
+    labels.forEach((val, idx) => {
+      if (groups["섬광"].includes(idx)) counts["섬광"] += val * (idx === 3 ? 0.5 : 1);
+      if (groups["단색"].includes(idx)) counts["단색"] += val * (idx === 3 ? 0.5 : 1);
+      if (groups["패턴"].includes(idx)) counts["패턴"] += val;
+    });
+
+    const total = counts["섬광"] + counts["패턴"] + counts["단색"] || 1;
+    seriesData["섬광"].push({ x: isoTime, y: counts["섬광"] / total });
+    seriesData["패턴"].push({ x: isoTime, y: counts["패턴"] / total });
+    seriesData["단색"].push({ x: isoTime, y: counts["단색"] / total });
+  });
+
+  const options = {
+    chart: {
+      type: 'area',
+      height: 300,
+      stacked: false,
+      background: 'transparent',
+      toolbar: { show: true },
+    },
+
+    grid: {
+      padding: { top: 8, right: 12, bottom: 12, left: 12 }
+    },
+
+    legend: {
+      position: 'top', horizontalAlign: 'left'
+    },
+
+    dataLabels: {
+      enabled: true,
+      formatter: (val) => (val * 100).toFixed(2),
+    },
+
+    series: [
+      { name: "섬광", data: seriesData["섬광"] },
+      { name: "패턴", data: seriesData["패턴"] },
+      { name: "단색", data: seriesData["단색"] }
+    ],
+    xaxis: {
+      type: 'datetime',
+      title: { text: "영상 시간" }
+    },
+    yaxis: {
+      min: 0,
+      max: 1,
+      title: { text: "위험 비율" },
+      labels: {
+        formatter: (val) => Number(val).toFixed(3)
+      }
+    },
+    tooltip: {
+      x: { format: "HH:mm:ss" },
+      y: {
+        formatter: (val) => `${(Number(val) * 100).toFixed(1)}%`
+      }
+    },
+    colors: ['#FF78AA', '#5AED9C', '#FFEC5A']
+  };
+
+  const chart = new ApexCharts(document.querySelector("#graph"), options);
+  chart.render();
+}
