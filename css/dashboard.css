@@ -23,8 +23,65 @@ section{
   justify-content: space-between;
   align-items: center;
   margin: 20px 30px;
+  display: flex;
+  align-items: center; /* 수직 가운데 정렬 */
+  gap: 20px; /* 슬라이더와 버튼 사이 간격 */
 }
 
+/*슬라이더와 버튼 */
+.controls-container {
+  display: flex;
+  gap: 16px; /* 각 컬럼 간 간격 */
+  align-items: flex-start; /* 슬라이더와 버튼 상단 맞춤 */
+}
+
+.slider-item {
+  display: flex;
+  flex-direction: column; /* 라벨+값 위, 슬라이더 아래 */
+  gap: 4px;
+}
+
+/* 전체 슬라이더 스타일 */
+input[type=range] {
+  -webkit-appearance: none; /* 기본 스타일 제거 */
+  width: 150px;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #5287EA 25%, #ddd 25%); /* 예시: 값 0.75 */
+  outline: none;
+}
+
+/* 슬라이더 핸들 */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-timelines-middle); /* 핸들 색상 */
+  cursor: pointer;
+}
+
+/* Firefox */
+input[type=range]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-timelines-middle);
+  cursor: pointer;
+}
+
+input[type=range]:disabled {
+  opacity: 0.5;  /* 슬라이더가 비활성화된 느낌 */
+  cursor: not-allowed;
+}
+
+.button-item {
+  display: flex;
+  flex-direction: row; /* 가로 정렬 */
+  gap: 8px; /* 버튼 사이 간격 */
+  align-items: center; /* 버튼 높이 정렬 */
+}
 
 #dashboard-upload {
   background-color: transparent;
@@ -74,6 +131,7 @@ section{
   background-color: #0056b3;
 }
 
+/* 영상 */
 .video{
   position: relative;
   left: 20%;
