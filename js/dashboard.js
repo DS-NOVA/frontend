@@ -368,6 +368,11 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
   }
 
   const formData = new FormData();
+  const brightness = parseFloat(brightnessSlider.value).toFixed(2);
+  const saturation = parseFloat(saturationSlider.value).toFixed(2);
+
+  formData.append('brightness', brightness);
+  formData.append('saturation', saturation);
   formData.append('video', file);
   
   showDetectSplash();
