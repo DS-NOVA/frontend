@@ -1,7 +1,7 @@
 import { API_BASE, ensureAccess, authFetch } from './auth.js';
 // dashboard.js 최상단 또는 dashboard.html <script>에 추가
 
-  if (window.LiveReloadBlocked !== true) {
+if (window.LiveReloadBlocked !== true) {
   try {
     Object.defineProperty(window, 'WebSocket', {
       configurable: true, // 나중에 복구 가능하도록
@@ -63,6 +63,7 @@ Object.defineProperty(window, 'WebSocket', {
   let currentInputURL = null;
   let currentOutputURL = null;
   let overlayRanges = [];
+
 
   let currentOverlay = null;
 
@@ -245,7 +246,7 @@ async function saveHistory(videoId, token) {
   outputVideo.currentTime = clickTime;
 
   const activeRange = overlayRanges.find(r => clickTime >= r.start && clickTime <= r.end);
-  if (activeRange) {
+  if (activeRange && activeRange.overlaySrc) {
     overlayVideo.src = activeRange.overlaySrc;
     overlayVideo.load();
 
@@ -278,7 +279,7 @@ function setupTimeUpdateHandler() {
       currentTime >= range.start && currentTime <= range.end
     );
 
-    if (activeRange) {
+    if (activeRange && activeRange.overlaySrc) {
       const offset = currentTime - activeRange.start;
 
       if (!currentOverlay || currentOverlay.overlaySrc !== activeRange.overlaySrc) {
@@ -312,6 +313,7 @@ function setupTimeUpdateHandler() {
     fileInput.click();
   });
 
+
 //슬라이더
 // 밝기
 const brightnessSlider = document.getElementById("brightness");
@@ -341,6 +343,7 @@ saturationSlider.addEventListener("input", () => {
   saturationVal.textContent = parseFloat(saturationSlider.value).toFixed(2);
 });
 
+
 document.getElementById('dashboard-play').addEventListener('click', async (e) => {
   // 슬라이더 비활성화
   brightnessSlider.disabled = true;
@@ -349,17 +352,10 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
   e.preventDefault();
   e.stopPropagation();
 
-  //우선 Graph 랜더링 보여지게 해 놓음 (추후 수정 필요)
-  try {
-    const testResp = await fetch("/data/test_data.json");
-    const testData = await testResp.json();
 
-    console.log("✅ testData 불러옴:", testData); // ← 반드시 떠야 함
-      
-    RiskGraph(testData); //testdata 연결, 추후 수정 필요
-  } catch (err) {
-    console.error("Graph 렌더링 실패:", err);
-  }
+  const btn = e.currentTarget;
+  btn.disabled = true;         // 중복 클릭 방지
+  showDetectSplash();          // 클릭 즉시 스플래시 ON
 
   const file = document.getElementById('videoInput').files[0];
   if (!file) {
@@ -378,32 +374,124 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
   showDetectSplash();
 
   try {
+    // 1) 파일 확인
+    const file = document.getElementById('videoInput').files[0];
+    if (!file) {
+      alert('파일을 선택해주세요');
+      return;
+    }
+
+    // 2) 접근 보장
     await ensureAccess();
+
+    // 3) 업로드
+    const formData = new FormData();
+    formData.append('video', file);
+
     const response = await authFetch(`${API_BASE}/nova/dashboard/video/upload/`, {
       method: 'POST',
       body: formData,
     });
 
+    if (!response.ok) {
+      const text = await response.text().catch(() => '');
+      throw new Error(`업로드 실패 (${response.status}) ${text || ''}`);
+    }
+
+    // 4) 응답 파싱
     const result = await response.json();
+    console.log('📦 upload result:', result);
+
+    // 5) 비디오 src 결정(보간본 우선) + 캐시 방지
+    const finalSrcBase = result.outputSrcInterpolated || result.outputSrc || '';
+    const finalSrc = finalSrcBase
+      ? `${finalSrcBase}${finalSrcBase.includes('?') ? '&' : '?'}cb=${Date.now()}`
+      : '';
+
+    // 6) overlayRanges 스키마 정규화 (내부에서만 처리)
+    const overlayRangesSec = Array.isArray(result.riskyRanges)
+       ? result.riskyRanges.map(({ start, end }) => ({
+          start: Number(start) || 0,
+          end: Number(end) || 0,
+          // 단일 mp4 파이프라인이라 overlaySrc는 없음(미사용)
+        }))
+      : [];
+
+    const interpPairs = Array.isArray(result.interpolatedSpans)
+      ? result.interpolatedSpans.map(({ start, end }) => ({
+          start: Number(start) || 0,
+          end: Number(end) || 0,
+        }))
+      : [];
+
+    console.log("🟥 riskyRanges(초, 웹표시/밝기):", overlayRangesSec);
+    console.log("🟦 interpolatedSpans(초, 보간쌍):", interpPairs);
+    // 7) 비디오 태그 즉시 교체
+    const outputVideo = document.getElementById('outputVideo');
+    if (outputVideo && finalSrc) {
+      outputVideo.src = finalSrc;
+      outputVideo.load?.();
+    }
+
+    // 8) 메타 저장 (여기서 finalSrc/overlayRanges를 먼저 만든 뒤 저장)
+    const safeVideoId = isNaN(parseInt(result.video_id))
+      ? result.video_id
+      : parseInt(result.video_id);
 
     TestvideoData[file.name] = {
-      outputSrc: result.outputSrc,
-      fps: result.fps,
-      overlayRanges: result.overlays,
-      videoId: parseInt(result.video_id)
+      outputSrc: finalSrc,                               // 보간본 우선
+      fps: result.fps ?? null,
+      overlayRanges: overlayRangesSec,             // 통합 스키마
+      videoId: safeVideoId,
+      graphData: Array.isArray(result.graphData) ? result.graphData : [],
+      interpPairs: interpPairs,
+      cvcvLabelOrder: Array.isArray(result.cvLabelOrder) ? result.cvLabelOrder : []
     };
 
+    console.log("inputVideo.src:", document.getElementById('inputVideo')?.src);
+    console.log("outputVideo.src:", outputVideo?.src);
+
+    // 9) 그래프 렌더링 (응답 우선, 없으면 테스트 데이터 폴백)
+    try {
+      let graphDataToUse =
+        (Array.isArray(result.graphData) && result.graphData.length > 0)
+          ? result.graphData
+          : null;
+
+      if (!graphDataToUse) {
+        const testResp = await fetch("/data/test_data.json", { cache: "no-store" });
+        graphDataToUse = await testResp.json();
+        console.log("✅ testData 불러옴(폴백):", graphDataToUse);
+      } else {
+        console.log("✅ result.graphData 사용");
+      }
+
+      // RiskGraph(graphDataToUse);
+      const fps = Number(result.fps) || 30;
+      const cvLabelOrder = Array.isArray(result.cvLabelOrder) ? result.cvLabelOrder : [];
+      RiskGraph(graphDataToUse, fps, cvLabelOrder);
+
+    } catch (gErr) {
+      console.error("Graph 렌더링 실패:", gErr);
+    }
+
+    // 10) 후처리(타임라인/오버레이 등 세팅)
     await handleVideoAfterUpload(file);
+
+    if (result?.message) {
+      alert(result.message);
+    } else {
+      alert('업로드 및 처리 완료!');
+    }
   } catch (err) {
     console.error(err);
+    alert(`처리 중 오류가 발생했습니다.\n${err?.message || err}`);
   } finally {
     // 스플래시 OFF: 성공/실패 무관하게 종료
     hideDetectSplash();
   }
 });
-    // 왜 자꾸 서버에 잘 올라가는데 업로드 실패가 뜨는지..? 모르겠음 추후 수정 예정
-    // alert('업로드 실패'); 
-  
+
 // 원본 영상 다운로드 (테스트용)
 function mapFileNameToId(fileName) {
     const cleanedName = fileName
@@ -514,91 +602,86 @@ document.getElementById('videoInput').addEventListener('change', (e) => {
 });
 
 // 그래프
-function RiskGraph(data) {
+function RiskGraph(data, fps = 30, cvLabelOrder = []) {
   const graphContainer = document.querySelector("#graph");
-  graphContainer.innerHTML = ""; // 기존 그래프 초기화
+  graphContainer.innerHTML = "";
 
-  const baseDate = new Date().toISOString().split("T")[0];
+  const seriesData = { "섬광": [], "패턴": [], "단색": [] };
 
-  const seriesData = {
-    "섬광": [],
-    "패턴": [],
-    "단색": []
+  // labels: [ ...cv flags..., flash, pattern, redlight ]
+  const labelsLen = Array.isArray(data?.[0]?.labels) ? data[0].labels.length : 0;
+  if (labelsLen < 3) return; // 방어
+
+  const nCv = labelsLen - 3;              // CV 지표 개수(보통 6)
+  const idxFlash   = nCv + 0;             // flash
+  const idxPattern = nCv + 1;             // pattern
+  const idxRed     = nCv + 2;             // redlight
+  const inRange = (i) => i >= 0 && i < labelsLen;
+
+  // 네가 원한 매핑 (3번은 두 그룹에 걸치므로 가중 0.5)
+  const GROUPS = {
+    "섬광": [0, 2, 3, idxFlash].filter(inRange),
+    "패턴": [4, 5, idxPattern].filter(inRange),
+    "단색": [1, 3, idxRed].filter(inRange),
   };
 
-  data.forEach((range) => {
-    const time = new Date(`${baseDate}T00:00:00Z`);
-    time.setSeconds(time.getSeconds() + range.start);
-    const isoTime = time.toISOString();
+  // (1) 가중치: 인덱스 3만 0.5, 나머지 1
+  const W = (i) => (i === 3 ? 0.5 : 1);
 
-    const labels = range.labels || [];
-    const groups = {
-      "섬광": [0, 2, 3, 6],
-      "패턴": [4, 5, 7],
-      "단색": [1, 3, 8]
-    };
+  // (2) 그룹 분모: 가중치 합 (그룹 크기)
+  const DEN = {
+    "섬광": GROUPS["섬광"].reduce((a, i) => a + W(i), 0) || 1,
+    "패턴": GROUPS["패턴"].reduce((a, i) => a + W(i), 0) || 1,
+    "단색": GROUPS["단색"].reduce((a, i) => a + W(i), 0) || 1,
+  };
 
-    let counts = { "섬광": 0, "패턴": 0, "단색": 0 };
-    labels.forEach((val, idx) => {
-      if (groups["섬광"].includes(idx)) counts["섬광"] += val * (idx === 3 ? 0.5 : 1);
-      if (groups["단색"].includes(idx)) counts["단색"] += val * (idx === 3 ? 0.5 : 1);
-      if (groups["패턴"].includes(idx)) counts["패턴"] += val;
-    });
+  data.forEach((pt, i) => {
+    // X축: 프레임 번호
+    const x = (typeof pt.frame === "number")
+      ? pt.frame
+      : Number.isFinite(pt.start) ? Math.round(pt.start * fps) : i;
 
-    const total = counts["섬광"] + counts["패턴"] + counts["단색"] || 1;
-    seriesData["섬광"].push({ x: isoTime, y: counts["섬광"] / total });
-    seriesData["패턴"].push({ x: isoTime, y: counts["패턴"] / total });
-    seriesData["단색"].push({ x: isoTime, y: counts["단색"] / total });
+    const L = Array.isArray(pt.labels) ? pt.labels : [];
+
+    // (3) 그룹 커버리지 = (켜진 라벨 가중합) / (그룹 크기)
+    const covFlash   = GROUPS["섬광"].reduce((a, k) => a + W(k) * (Number(L[k]) || 0), 0) / DEN["섬광"];
+    const covPattern = GROUPS["패턴"].reduce((a, k) => a + W(k) * (Number(L[k]) || 0), 0) / DEN["패턴"];
+    const covRed     = GROUPS["단색"].reduce((a, k) => a + W(k) * (Number(L[k]) || 0), 0) / DEN["단색"];
+
+    seriesData["섬광"].push({ x, y: covFlash   });
+    seriesData["패턴"].push({ x, y: covPattern });
+    seriesData["단색"].push({ x, y: covRed     });
   });
 
   const options = {
-    chart: {
-      type: 'area',
-      height: 300,
-      stacked: false,
-      background: 'transparent',
-      toolbar: { show: true },
-    },
-
-    grid: {
-      padding: { top: 8, right: 12, bottom: 12, left: 12 }
-    },
-
-    legend: {
-      position: 'top', horizontalAlign: 'left'
-    },
-
-    dataLabels: {
-      enabled: true,
-      formatter: (val) => (val * 100).toFixed(2),
-    },
-
+    chart: { type: 'area', height: 300, stacked: false, background: 'transparent', toolbar: { show: true } },
+    stroke: { width:3, lineCap: 'round' }, 
+    fill: { type: 'solid', opacity: 0.3 },
+    grid:  { padding: { top: 8, right: 12, bottom: 12, left: 12 } },
+    legend:{ position: 'top', horizontalAlign: 'left' },
+    dataLabels: { enabled: false },
     series: [
       { name: "섬광", data: seriesData["섬광"] },
       { name: "패턴", data: seriesData["패턴"] },
       { name: "단색", data: seriesData["단색"] }
     ],
     xaxis: {
-      type: 'datetime',
-      title: { text: "영상 시간" }
+      type: 'numeric',
+      title: { text: "프레임" },
+      labels: { formatter: (v) => `${Math.round(v)}` },
+      tickAmount: 10
     },
     yaxis: {
-      min: 0,
-      max: 1,
-      title: { text: "위험 비율" },
-      labels: {
-        formatter: (val) => Number(val).toFixed(3)
-      }
+      min: 0, max: 1,
+      title: { text: "그룹 커버리지(%)" },
+      labels: { formatter: (val) => (Number(val) * 100).toFixed(0) }
     },
     tooltip: {
-      x: { format: "HH:mm:ss" },
-      y: {
-        formatter: (val) => `${(Number(val) * 100).toFixed(1)}%`
-      }
+      x: { formatter: (frame) => `프레임 ${frame} (${(frame / fps).toFixed(3)}s)` },
+      y: { formatter: (val) => `${(Number(val) * 100).toFixed(1)}%` }
     },
     colors: ['#FF78AA', '#5AED9C', '#FFEC5A']
   };
 
-  const chart = new ApexCharts(document.querySelector("#graph"), options);
-  chart.render();
+  new ApexCharts(graphContainer, options).render();
 }
