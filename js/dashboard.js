@@ -22,7 +22,9 @@ Object.defineProperty(window, 'WebSocket', {
   },
 });
 
-    const splashEl = document.getElementById('detect-splash');
+
+//스플래시
+  const splashEl = document.getElementById('detect-splash');
   let splashTimeout = null;
 
   function showDetectSplash() { 
@@ -311,13 +313,65 @@ function setupTimeUpdateHandler() {
     fileInput.click();
   });
 
+
+//슬라이더
+// 밝기
+const brightnessSlider = document.getElementById("brightness");
+const brightnessVal = document.getElementById("brightnessVal");
+
+// 채도
+const saturationSlider = document.getElementById("saturation");
+const saturationVal = document.getElementById("saturationVal");
+
+//슬라이더 색상
+brightnessSlider.addEventListener('input', (e) => {
+  const val = e.target.value;
+  e.target.style.background = `linear-gradient(to right, #5287EA ${val*100}%, #ddd ${val*100}%)`;
+});
+
+saturationSlider.addEventListener('input', (e) => {
+  const val = e.target.value;
+  e.target.style.background = `linear-gradient(to right, #5287EA ${val*100}%, #ddd ${val*100}%)`;
+});
+
+// 슬라이더 값이 바뀔 때 span 업데이트
+brightnessSlider.addEventListener("input", () => {
+  brightnessVal.textContent = parseFloat(brightnessSlider.value).toFixed(2);
+});
+
+saturationSlider.addEventListener("input", () => {
+  saturationVal.textContent = parseFloat(saturationSlider.value).toFixed(2);
+});
+
+
 document.getElementById('dashboard-play').addEventListener('click', async (e) => {
+  // 슬라이더 비활성화
+  brightnessSlider.disabled = true;
+  saturationSlider.disabled = true;
+  
   e.preventDefault();
   e.stopPropagation();
+
 
   const btn = e.currentTarget;
   btn.disabled = true;         // 중복 클릭 방지
   showDetectSplash();          // 클릭 즉시 스플래시 ON
+
+  const file = document.getElementById('videoInput').files[0];
+  if (!file) {
+    alert('파일을 선택해주세요');
+    return;
+  }
+
+  const formData = new FormData();
+  const brightness = parseFloat(brightnessSlider.value).toFixed(2);
+  const saturation = parseFloat(saturationSlider.value).toFixed(2);
+
+  formData.append('brightness', brightness);
+  formData.append('saturation', saturation);
+  formData.append('video', file);
+  
+  showDetectSplash();
 
   try {
     // 1) 파일 확인
@@ -433,8 +487,8 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
     console.error(err);
     alert(`처리 중 오류가 발생했습니다.\n${err?.message || err}`);
   } finally {
-    hideDetectSplash();   // 성공/실패 무관하게 스플래시 OFF
-    btn.disabled = false; // 버튼 복구
+    // 스플래시 OFF: 성공/실패 무관하게 종료
+    hideDetectSplash();
   }
 });
 
