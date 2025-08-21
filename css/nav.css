@@ -64,3 +64,9 @@
   border-radius: 50%;
   object-fit: cover;
 }
+
+#nav-history,
+#nav-logout {
+  cursor: pointer;
+  user-select: none;
+}
