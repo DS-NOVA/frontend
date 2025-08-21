@@ -112,16 +112,20 @@ Object.defineProperty(window, 'WebSocket', {
     tooltip.classList.remove('show');
   }
 
-  // 추가: 툴팁 위치 업데이트 함수
+  // ✅ 교체: 출력 타임라인(#outputTimelineHost) 기준으로 툴팁 위치 계산
   function updateTooltipPosition(e) {
-    const rect = document.querySelector('.timeline-container').getBoundingClientRect();
+    const host = document.getElementById('outputTimelineHost');
+    if (!host || !tooltip) return;
+
+    const rect = host.getBoundingClientRect();
+    if (rect.width <= 0) return;
+
     const mouseX = e.clientX - rect.left;
-    
-    const tooltipPercentage = (mouseX / rect.width) * 100;
-    
-    tooltip.style.left = `${tooltipPercentage}%`;
-    tooltip.style.transform = 'translateX(-50%)'; // 중앙 정렬
+    const pct = Math.max(0, Math.min(1, mouseX / rect.width));
+    tooltip.style.left = `${pct * 100}%`;
+    tooltip.style.transform = 'translateX(-50%)';
   }
+
 
   function handlerPauseBtn(){
     if (pause)  {
@@ -579,8 +583,11 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  pauseBtn.removeEventListener('click', handlerPauseBtn);
-  pauseBtn.addEventListener('click', handlerPauseBtn);
+  if(pauseBtn){
+    pauseBtn.removeEventListener('click', handlerPauseBtn);
+    pauseBtn.addEventListener('click', handlerPauseBtn);
+  }
+  
 
   const userId = document.getElementById("user-id");
 
@@ -685,3 +692,332 @@ function RiskGraph(data, fps = 30, cvLabelOrder = []) {
 
   new ApexCharts(graphContainer, options).render();
 }
+
+/* ===== Enhanced Timeline (non-conflict, drop-in) ===== */
+(() => {
+  // 헬퍼 (고유 접두사로 충돌 방지)
+  const __clamp01 = (x) => Math.max(0, Math.min(1, Number(x) || 0));
+  const __isFiniteDur = (d) => Number.isFinite(d) && d > 0;
+  const __pad2 = (n) => String(n).padStart(2, '0');
+  const __fmtTime = (t) => {
+    if (!Number.isFinite(t)) return '00:00';
+    const s = Math.floor(t % 60);
+    const m = Math.floor((t / 60) % 60);
+    const h = Math.floor(t / 3600);
+    return h > 0 ? `${h}:${__pad2(m)}:${__pad2(s)}` : `${__pad2(m)}:${__pad2(s)}`;
+  };
+
+  // 타임라인 컨트롤러 (진행바 + 노브 + 라벨 + 노란 오버레이)
+  function createTimelineEnhanced({ host, video, ranges }) {
+    if (!host || !video) return null;
+
+    // 기존 루트 제거 후 교체
+    let root = host.querySelector('.__timeline-root');
+    if (root) root.remove();
+
+    root = document.createElement('div');
+    root.className = '__timeline-root';
+    Object.assign(root.style, {
+      position: 'relative',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      marginTop: '12px',
+      padding: '2px 0',
+      userSelect: 'none',
+      zIndex: '10000',
+      pointerEvents: 'auto',
+      overflow: 'visible',
+      width: '100%',
+    });
+
+    const track = document.createElement('div');
+    Object.assign(track.style, {
+      position: 'relative',
+      flex: '1 1 auto',
+      height: '16px',
+      cursor: 'pointer',
+      background: 'linear-gradient(#e5e7eb,#e5e7eb) center/100% 4px no-repeat',
+      borderRadius: '6px',
+      overflow: 'visible',
+    });
+
+    const timeLabel = document.createElement('div');
+    Object.assign(timeLabel.style, {
+      flex: '0 0 auto',
+      fontSize: '12px',
+      color: '#111827',
+      whiteSpace: 'nowrap',
+    });
+    timeLabel.textContent = '00:00 / 00:00';
+
+    const progressLayer = document.createElement('div'); // 파란 진행바
+    Object.assign(progressLayer.style, {
+      position: 'absolute',
+      top: '50%',
+      left: '0',
+      height: '6px',
+      transform: 'translateY(-50%)',
+      borderRadius: '4px',
+      width: '0%',
+      zIndex: '0',
+      pointerEvents: 'none',
+    });
+
+    const rangeLayer = document.createElement('div'); // 노란 오버레이
+    Object.assign(rangeLayer.style, {
+      position: 'absolute',
+      inset: '0 0 0 0',
+      pointerEvents: 'none',
+      overflow: 'visible',
+      zIndex: '1',
+    });
+
+    const knob = document.createElement('div'); // 동그라미 노브
+    Object.assign(knob.style, {
+      position: 'absolute',
+      top: '50%',
+      left: '0%',
+      width: '14px',
+      height: '14px',
+      transform: 'translate(-50%, -50%)',
+      background: '#fff',
+      border: '2px solid #111827',
+      borderRadius: '999px',
+      boxShadow: '0 1px 3px rgba(0,0,0,.2)',
+      pointerEvents: 'auto',
+      touchAction: 'none',
+      zIndex: '2',
+    });
+    knob.setAttribute('role', 'slider');
+    knob.setAttribute('tabindex', '0');
+    knob.setAttribute('aria-valuemin', '0');
+
+    // 조립
+    track.appendChild(progressLayer);
+    track.appendChild(rangeLayer);
+    track.appendChild(knob);
+    root.appendChild(track);
+    root.appendChild(timeLabel);
+    host.prepend(root);
+
+    // 내부 범위 참조
+    let rangesRef = Array.isArray(ranges) ? ranges : [];
+
+    function renderRanges(duration) {
+      rangeLayer.innerHTML = '';
+      if (!__isFiniteDur(duration)) return;
+      rangesRef.forEach((r) => {
+        const s0 = Number(r.start) || 0;
+        const e0 = Number(r.end) || 0;
+        const s = Math.max(0, Math.min(s0, duration));
+        const e = Math.max(0, Math.min(e0, duration));
+        if (e <= s) return;
+        const seg = document.createElement('div');
+        Object.assign(seg.style, {
+          position: 'absolute',
+          top: '50%',
+          height: '6px',
+          transform: 'translateY(-50%)',
+          background: 'rgba(255,205,80,.85)',
+          borderRadius: '4px',
+          left: `${__clamp01(s / duration) * 100}%`,
+          width: `${__clamp01((e - s) / duration) * 100}%`,
+        });
+        rangeLayer.appendChild(seg);
+      });
+    }
+
+    function update(time, dur) {
+      const d = __isFiniteDur(dur) ? dur : (video?.duration || 0);
+      const t = Math.max(0, Math.min(time || 0, d || 0));
+      const pct = d > 0 ? (t / d) : 0;
+
+      knob.style.left = `${pct * 100}%`;
+      progressLayer.style.width = `${pct * 100}%`;
+      timeLabel.textContent = `${__fmtTime(t)} / ${__fmtTime(d || 0)}`;
+      knob.setAttribute('aria-valuenow', String(t.toFixed(3)));
+      knob.setAttribute('aria-valuemax', String(d || 0));
+    }
+
+    function updateDuration(dur) {
+      renderRanges(dur);
+      update(video?.currentTime || 0, dur);
+    }
+
+    function getRangeAt(t) {
+      return rangesRef.find(r => t >= (Number(r.start) || 0) && t <= (Number(r.end) || 0));
+    }
+
+    function setRanges(next) {
+      rangesRef = Array.isArray(next) ? next : [];
+      renderRanges(video?.duration || 0);
+    }
+
+    // 좌표 → 시간
+    const clientXToTime = (clientX) => {
+      const rect = track.getBoundingClientRect();
+      const dur = video?.duration || 0;
+      if (!__isFiniteDur(dur) || rect.width <= 0) return 0;
+      const pct = __clamp01((clientX - rect.left) / rect.width);
+      return pct * dur;
+    };
+
+    // 시크 시 오버레이 즉시 동기화
+    async function onSeek(t) {
+      const dur = video?.duration || 0;
+      const time = Math.max(0, Math.min(t, dur));
+      pause = false;
+      video.currentTime = time;
+
+      // 기존 overlay 즉시 반영 (기존 container.onclick 로직과 동일)
+      const activeRange = overlayRanges?.find(r => time >= r.start && time <= r.end);
+      if (activeRange && activeRange.overlaySrc) {
+        overlayVideo.src = activeRange.overlaySrc;
+        overlayVideo.load();
+        overlayVideo.onloadeddata = () => {
+          overlayVideo.currentTime = time - activeRange.start;
+          overlayVideo.style.opacity = '1';
+          overlayVideo.play().catch(e => console.warn('Overlay play error:', e));
+        };
+      } else {
+        overlayVideo.pause();
+        overlayVideo.src = '';
+        overlayVideo.style.opacity = '0';
+      }
+
+      update(time, dur);
+    }
+
+    // 포인터 드래그/클릭
+    let dragging = false;
+    track.addEventListener('pointerdown', async (e) => {
+      dragging = true;
+      track.setPointerCapture?.(e.pointerId);
+      const t = clientXToTime(e.clientX);
+      await onSeek(t);
+    });
+    window.addEventListener('pointermove', async (e) => {
+      if (!dragging) return;
+      const t = clientXToTime(e.clientX);
+      await onSeek(t);
+    });
+    window.addEventListener('pointerup', async (e) => {
+      if (!dragging) return;
+      dragging = false;
+      track.releasePointerCapture?.(e.pointerId);
+      const t = clientXToTime(e.clientX);
+      await onSeek(t);
+    });
+
+    // 키보드
+    knob.addEventListener('keydown', async (e) => {
+      const step = (e.shiftKey ? 2 : 0.5);
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        const dur = video?.duration || 0;
+        const cur = video?.currentTime || 0;
+        const next = e.key === 'ArrowLeft' ? Math.max(0, cur - step) : Math.min(dur, cur + step);
+        await onSeek(next);
+      }
+    });
+
+    // 초기 렌더
+    renderRanges(video?.duration || 0);
+    update(0, video?.duration || 0);
+
+    return { update, updateDuration, track, timeLabel, knob, getRangeAt, setRanges };
+  }
+
+  // 전역 컨트롤러 보관
+  let __timelineCtrl = null;
+
+  // 기존 setupTimeline 재정의 (오버레이 유지 + 툴팁은 오버레이 구간에서만 노출)
+  window.setupTimeline = function setupTimeline() {
+    const container = document.querySelector('.timeline-container');
+    if (!container || !outputVideo) return;
+
+    __timelineCtrl = createTimelineEnhanced({
+      host: container,
+      video: outputVideo,
+      ranges: overlayRanges,
+    });
+
+    // 오버레이 범위가 바뀔 수 있으니 한 번 더 동기화
+    __timelineCtrl?.setRanges(overlayRanges);
+
+    // 툴팁: duration 유효 & 오버레이 구간일 때만 표시
+    const onMove = (e) => {
+      if (!__timelineCtrl) return;
+      const rect = __timelineCtrl.track.getBoundingClientRect();
+      const dur = outputVideo?.duration || 0;
+      if (!__isFiniteDur(dur) || rect.width <= 0) {
+        hideTooltip?.();
+        return;
+      }
+      const pct = __clamp01((e.clientX - rect.left) / rect.width);
+      const t = pct * dur;
+      const range = __timelineCtrl.getRangeAt(t);
+      if (!range) {
+        hideTooltip?.();
+        return;
+      }
+      // 기존 showTooltip(e, range) 재사용 (사용자 정의 함수)
+      showTooltip?.(e, range);
+    };
+
+    __timelineCtrl.track.addEventListener('mousemove', onMove);
+    __timelineCtrl.track.addEventListener('mouseleave', () => hideTooltip?.());
+
+    // 메타 로딩 후 오버레이/라벨/노브 업데이트
+    outputVideo.addEventListener('loadedmetadata', () => {
+      __timelineCtrl?.updateDuration(outputVideo.duration);
+    }, { once: true });
+  };
+
+  // 기존 setupTimeUpdateHandler 재정의 (타임라인 업데이트 추가)
+  window.setupTimeUpdateHandler = function setupTimeUpdateHandler() {
+    if (handlerTimeUpdate) {
+      outputVideo.removeEventListener('timeupdate', handlerTimeUpdate);
+    }
+
+    handlerTimeUpdate = () => {
+      if (pause) return;
+      const currentTime = outputVideo.currentTime;
+
+      // === 기존 오버레이 동작 유지 ===
+      const activeRange = overlayRanges.find(range =>
+        currentTime >= range.start && currentTime <= range.end
+      );
+
+      if (activeRange && activeRange.overlaySrc) {
+        const offset = currentTime - activeRange.start;
+
+        if (!window.currentOverlay || window.currentOverlay?.overlaySrc !== activeRange.overlaySrc) {
+          overlayVideo.src = activeRange.overlaySrc;
+          overlayVideo.load();
+          overlayVideo.onloadeddata = () => {
+            overlayVideo.currentTime = offset;
+            overlayVideo.style.opacity = '1';
+            window.currentOverlay = activeRange;
+
+            overlayVideo.play().catch(err => console.warn("Overlay autoplay 실패:", err));
+          };
+        } else {
+          overlayVideo.currentTime = offset;
+          overlayVideo.style.opacity = '1';
+        }
+      } else {
+        overlayVideo.pause();
+        overlayVideo.src = "";
+        overlayVideo.style.opacity = "0";
+        window.currentOverlay = null;
+      }
+
+      // === 타임라인 진행/노브/라벨 업데이트 추가 ===
+      __timelineCtrl?.update(currentTime, outputVideo.duration);
+    };
+
+    outputVideo.addEventListener('timeupdate', handlerTimeUpdate);
+  };
+})();
