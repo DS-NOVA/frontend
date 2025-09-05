@@ -1,4 +1,5 @@
 import { API_BASE } from './auth.js';
+import {toast} from './toast.js';
 
 const fileInput = document.getElementById("user_image");
 const previewImage = document.getElementById("profile-image-preview");
@@ -31,7 +32,9 @@ document.getElementById('signup-btn').addEventListener('click', async (e) => {
 
     if(!username || !email || password.length < 6){
         e.preventDefault();
-        alert("모든 필드를 바르게 입력해주세요.");
+        toast('모든 필드를 바르게 입력해주세요. (비밀번호 6자 이상)', { type: 'error', duration: 2200 });
+        //alert("모든 필드를 바르게 입력해주세요.");
+
         return;
     }
 

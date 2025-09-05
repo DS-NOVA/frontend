@@ -4,7 +4,7 @@ body {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  position: relative; /* 기본값, 명시해도 OK */
+  position: relative; 
   overflow-x: hidden;
 }
 
@@ -56,8 +56,9 @@ body {
   border: 1px solid var(--color-main-blue);
   border-radius: 15px;
   font-size: 100%;
-  width: 100%;  
+  width: 110%;  /*100%*/
   box-sizing: border-box;
+  height: 60px; /*삭제*/
 }
 
 .login-form a{

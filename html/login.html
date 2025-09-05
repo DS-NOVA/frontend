@@ -6,6 +6,7 @@
         <title>Nova</title>
         <link rel="stylesheet" href="../css/style.css" />
         <link rel="stylesheet" href="../css/login.css" />
+        <link rel="stylesheet" href="../css/toast.css" />
         <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" />
     </head>
 
@@ -33,13 +34,13 @@
 
                 <input type="email" placeholder="이메일" required id="email" />
                 <input type="password" placeholder="비밀번호" minlength=6 required id="password" />
-                <p class="signup-link">계정이 없으신가요? <a href="signup.html">회원가입</a></p>
+                <p class="signup-link" style="font-size: 18px;">계정이 없으신가요? <a href="signup.html">회원가입</a></p>
                 
                 <button type="submit" id="login-btn">로그인</button>
 
             </form>
         </main>
-
+        <script type="module" src="../js/toast.js"></script>
         <script type="module" src="../js/login.js"></script>
 
     </body>
