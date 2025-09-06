@@ -119,3 +119,81 @@ export async function isLoggedIn() {
     return false;
   }
 }
+// ---- lazy email resolver (no initAuth change) ----
+let __emailCache = null;           // string | null | undefined(미해결)
+let __emailInflight = null;        // Promise<string|null> | null
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+function base64UrlDecodeSafe(s) {
+  try {
+    const pad = s.length % 4 ? 4 - (s.length % 4) : 0;
+    return atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat(pad));
+  } catch { return null; }
+}
+
+function getEmailFromJwtClaims() {
+  const t = window.ACCESS_TOKEN;
+  if (!t || t.split('.').length < 2) return null;
+  const payload = base64UrlDecodeSafe(t.split('.')[1]);
+  if (!payload) return null;
+  try {
+    const p = JSON.parse(payload);
+    const candidates = [
+      p.email,
+      Array.isArray(p.emails) ? p.emails[0] : undefined,
+      p.preferred_username,
+      p.upn,
+      p.login,
+    ].filter(Boolean);
+    for (const c of candidates) {
+      if (c && EMAIL_RE.test(String(c))) return String(c);
+    }
+  } catch {}
+  return null;
+}
+
+/**
+ * 필요할 때만 이메일을 가져오는 비동기 함수.
+ * 순서: CURRENT_USER -> JWT -> /me 호출(1회) -> null
+ */
+export async function getUserEmailLazy() {
+  if (__emailCache !== null) return __emailCache;      // 이미 결정됨(문자열 or null)
+  if (typeof window.CURRENT_USER?.email === 'string' && EMAIL_RE.test(window.CURRENT_USER.email)) {
+    __emailCache = String(window.CURRENT_USER.email);
+    return __emailCache;
+  }
+  const fromJwt = getEmailFromJwtClaims();
+  if (fromJwt) {
+    __emailCache = fromJwt;
+    return __emailCache;
+  }
+
+  // 동시 호출 병합
+  if (__emailInflight) return __emailInflight;
+
+  __emailInflight = (async () => {
+    try {
+      // initAuth는 그대로 두되, 여기서 한 번만 /me 조회
+      const resp = await authFetch(`${ME_URL}`, { method: 'GET' });
+      if (resp.ok) {
+        const me = await resp.json().catch(() => ({}));
+        // 클라이언트 전역에도 한 번 저장(선택)
+        window.CURRENT_USER = { ...(window.CURRENT_USER || {}), ...me };
+        const e = me?.email;
+        if (e && EMAIL_RE.test(String(e))) {
+          __emailCache = String(e);
+          return __emailCache;
+        }
+      }
+    } catch {}
+    __emailCache = null; // 실패 기록(불필요한 재시도 방지)
+    return null;
+  })();
+
+  try {
+    return await __emailInflight;
+  } finally {
+    __emailInflight = null;
+  }
+}

@@ -13,18 +13,31 @@ function showGuest() {
   });
 }
 //로그인 된 경우
-function showUser(email) {
+function showUser(email, imageUrl) {
   document.querySelector('.non-user-profile')?.style.setProperty('display', 'none');
   document.querySelector('.user-profile')?.style.removeProperty('display');
+  window.USER = { ...(window.USER || {}), email, imageUrl };
+  window.CURRENT_USER = { ...(window.CURRENT_USER || {}), email, imageUrl };
 
   const el = document.getElementById('user-id');
   if (el) el.textContent = email || 'User';
+  
+  const imgEl = document.querySelector('.user_img');
+  if (imgEl) {
+    if (imageUrl?.startsWith('/')) {
+      imgEl.src = `${API_BASE}${imageUrl}`;  
+    } else if (imageUrl) {
+      imgEl.src = imageUrl;                   // 절대 URL이면 그대로
+    } else {
+      imgEl.src = '/img/user_img.png';        // 기본 이미지
+    }
+  }
 
   const history = document.getElementById('nav-history');
   if (history && !history.dataset.bound) {
     history.dataset.bound = '1';
     history.addEventListener('click', () => {
-      window.location.href = '/html/history.html'; // 경로 다르면 여기만 바꿔주세요
+      window.location.href = '/html/history.html'; 
     });
   }
 
@@ -49,11 +62,11 @@ async function bootNavLogic() {
   showGuest();
   try {
     await ensureAccess();                 // 필요할 때만 refresh (CSRF 없으면 패스)
-    if (!window.ACCESS_TOKEN) return;     // 비로그인 → 게스트 유지
+    if (!window.ACCESS_TOKEN) return;     // 비로그인 -> 게스트 유지
     const resp = await authFetch(`${API_BASE}/nova/auth/me`);//여기 경로 추후 수정!!
     if (!resp.ok) return;
     const data = await resp.json();
-    showUser(data?.user?.user_email);
+    showUser(data?.user?.user_email, data?.user?.user_image);
   } catch {}
 }
 
