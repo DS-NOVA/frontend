@@ -16,6 +16,8 @@ function showGuest() {
 function showUser(email, imageUrl) {
   document.querySelector('.non-user-profile')?.style.setProperty('display', 'none');
   document.querySelector('.user-profile')?.style.removeProperty('display');
+  window.USER = { ...(window.USER || {}), email, imageUrl };
+  window.CURRENT_USER = { ...(window.CURRENT_USER || {}), email, imageUrl };
 
   const el = document.getElementById('user-id');
   if (el) el.textContent = email || 'User';

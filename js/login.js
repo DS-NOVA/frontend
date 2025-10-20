@@ -1,4 +1,5 @@
 import { API_BASE } from './auth.js';
+import {toast} from './toast.js';
 
 const form = document.querySelector('.login-form');   // 폼에 바인딩 권장
 const loginBtn = document.getElementById('login-btn');
@@ -53,7 +54,8 @@ async function onSubmit(e){
     const detail = Array.isArray(data?.detail)
       ? (data.detail[0]?.msg || JSON.stringify(data.detail))
       : (data?.detail || data?.message || '로그인 실패');
-    alert(typeof detail === 'string' ? detail : JSON.stringify(detail));
+    toast(typeof detail === 'string' ? detail : JSON.stringify(detail), { type: 'fail', duration: 2200 });
+    //alert(typeof detail === 'string' ? detail : JSON.stringify(detail));
 
   } catch (err) {
     console.error('로그인 에러:', err);
