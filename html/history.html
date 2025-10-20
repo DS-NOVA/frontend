@@ -6,6 +6,7 @@
   <title>NOVA History</title>
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/nav.css" />
+  <link rel="stylesheet" href="../css/toast.css" />
   <link rel="stylesheet" href="../css/history.css" />
 </head>
 <body>
@@ -26,9 +27,9 @@
 
       <!-- ✅ 페이지네이션 바 (history.js의 refreshPagination가 참조) -->
       <div class="pagination" id="pagination" style="display:flex; align-items:center; gap:12px; justify-content:center; margin-top:16px;">
-        <button id="page-prev" class="page-btn" type="button" disabled>이전</button>
-        <span id="page-info" aria-live="polite">1 / 1</span>
-        <button id="page-next" class="page-btn" type="button" disabled>다음</button>
+        <span id="page-prev" class="page-btn" type="button" disabled style="cursor: pointer; color: #9D9D9D;">이전</span>
+        <span id="page-info" aria-live="polite" style="color: #29477F; ;">1 / 1</span>
+        <span id="page-next" class="page-btn" type="button" disabled style="cursor: pointer; color: #9D9D9D;">다음</span>
       </div>
 
   
@@ -51,6 +52,7 @@
   </div>
 
   <script type="module" src="../js/nav.js"></script>
+  <script type="module" src="../js/toast.js"></script>
   <script type="module" src="../js/history.js"></script>
 </body>
 </html>

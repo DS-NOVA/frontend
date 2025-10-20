@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/nav.css" />
     <link rel="stylesheet" href="../css/dashboard.css" />
+    <link rel="stylesheet" href="../css/toast.css" />
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" />
   </head>
   <body>
@@ -18,47 +19,66 @@
       <!-- 영상 업로드 영역 -->
       <section class="upload">
         <input type="file" id="videoInput" name="video" accept="video/*" style="display: none;" />
-        <button id="dashboard-upload" type="button">
+        <button id="dashboard-upload" type="button" style="font-size: 20px;">
           <img src="../img/file_img.svg" alt="파일이미지" class="file_img" />
           select a file to upload
         </button>
         
         <div class="controls-container">
           <div class="slider-item">
-            <label for="brightness">밝기 강도: <span id="brightnessVal">0.25</span></label>
-            <input type="range" id="brightness" min="0" max="1" step="0.25" value="0.25" />
+            <label for="brightness" style="font-size: 18px;">밝기 강도: <span id="brightnessVal">0.75</span></label>
+            <input type="range" id="brightness" min="0" max="1" step="0.25" value="0.75" />
           </div>
           <div class="slider-item">
-            <label for="saturation">채도 강도: <span id="saturationVal">0.25</span></label>
-            <input type="range" id="saturation" min="0" max="1" step="0.25" value="0.25" />
+            <label for="saturation" style="font-size: 18px;">채도 강도: <span id="saturationVal">0.75</span></label>
+            <input type="range" id="saturation" min="0" max="1" step="0.25" value="0.75" />
           </div>
           <div class="button-item">
-            <button id="dashboard-play">PLAY</button>
-            <button id="dashboard-save">SAVE</button>
+            <button id="dashboard-play" style="font-size: 18px;">PLAY</button>
+            <button id="dashboard-save" style="font-size: 18px;">SAVE</button>
           </div>
         </div>
       </section>
 
       <div class="content-wrapper">
-        <div class="guidelines-section">
-          <h2 class="guidelines-title">Guidelines</h2>
-          <ul class="guidelines-list">
-            <li class="guidelines-item" data-guideline="flash-speed">
-              <img id="flash-icon" class="icon-img" hidden alt="" />
-              <span class="guidelines-text">휘도차 20cd/m² 이상 면적이 큰 섬광</span>
-            </li>
-            <li class="guidelines-item" data-guideline="green-blink">
-              <img id="redlight-icon" class="icon-img" hidden alt="" />
-              <span class="guidelines-text">초당 3회 이상·적색 비율 0.8 이상<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;변화량 20 이상 적색 섬광 금지</span>
-            </li>
-            <li class="guidelines-item" data-guideline="pattern-change">
-              <img id="pattern-icon" class="icon-img" hidden alt="" />
-              <span class="guidelines-text">밝고 어두운 줄무늬 5쌍 이상</span>
-            </li>
-          </ul>
+          <div class="uid2">
+            <span class="guidelines-title">Guidelines</span>
+            <div id="uid2-text">  
+              <small>AI 광과민성 기준 통과 여부 <br> ( <span style="color: #28a745;">pass </span>/<span style="color: #dc3545;"> fail</span> )</small>
+            </div>
+          <div class="guidelines-section">  
+            <ul class="guidelines-list">
+              <li class="guidelines-item" data-guideline="flash" data-label="섬광">
+                <img class="icon-img" hidden />
+                <div class="guidelines-box">
+                  <span class="guidelines-text-big">섬광</span><br>
+                  <span class="guidelines-text">휘도차 20cd/m² 이상 <br>면적이 큰 섬광</span>
+                </div>
+              </li>
+            
+              <li class="guidelines-item" data-guideline="pattern" data-label="패턴">
+                <img class="icon-img" hidden />
+                <div class="guidelines-box">
+                  <span class="guidelines-text-big">패턴</span><br>
+                  <span class="guidelines-text">밝고 어두운 줄무늬 5쌍 이상</span>
+                </div>
+              </li>
+            
+              <li class="guidelines-item" data-guideline="redlight" data-label="적색 섬광">
+                <img class="icon-img" hidden />
+                <div class="guidelines-box">
+                  <span class="guidelines-text-big">적색 섬광</span><br>
+                  <span class="guidelines-text">초당 3회 이상·적색 비율 0.8 이상<br>변화량 20 이상 적색 섬광</span>
+                </div>
+              </li>
+            </ul>
+            
+          </div>
         </div>
 
-        <div class="video-section">
+        <div class="uid">        
+          <span class="g-title">Video</span>
+          <div class="video-section">
           <!-- 변환 전 영상 -->
           <div class="input">
             <small>영상 변환 전</small>
@@ -88,14 +108,20 @@
               </div>
             </div>
           </div>
-        </div> <!-- /video-section -->
+        </div> <!-- /video-section --></div>
       </div>
 
+      <div class="content-wrapper">
       <section class="graph">
+        <h2 class="graph-title">Graph</h2>
+        <span class="graph-title-small">가로 축은 프레임 번호, 세로 축은 요소별 위험 수준입니다. 값이 높을수록 해당 구간의 주의 필요성이 큽니다.</span>
+        <br>
+        <span class="graph-title-small"><span style="font-weight: bold;">섬광 · 패턴 · 적색 섬광</span>은 AI 분석, 가이드라인은 <span style="font-weight: bold;">‘ITC 기준’</span>을 기반으로 한 선으로만 보여집니다.</span>
         <div id="graph-container">
           <div id="graph" style="width: 100%;"></div>
         </div>
       </section>
+      </div>
     </main>
 
     <div id="detect-splash" class="detect-splash" aria-live="polite" aria-busy="true" hidden>
@@ -117,6 +143,7 @@
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <script type="module" src="../js/auth_dashboard.js"></script>
     <script type="module" src="../js/nav.js"></script>
+    <script type="module" src="../js/toast.js"></script>
     <script type="module" src="../js/dashboard.js"></script>
   </body>
 </html>
