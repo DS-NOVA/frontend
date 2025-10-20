@@ -5,6 +5,9 @@ let currentVideoTitle = '';
 const itemsPerPage = 4;
 let currentPage = 1;
 let expanded = false;
+// 전역
+let paginationState = { total: 0, limit: 12, offset: 0 };
+
 
 function openModal(title) {
   currentVideoTitle = title;
@@ -56,25 +59,51 @@ async function submitFeedback() {
   }
 }
 
-function refreshPagination() {
-  const showMoreBtn = document.getElementById('showMoreBtn');
-  const items = document.querySelectorAll('.history-item');
-  const totalItems = items.length;
-  const itemsToShow = currentPage * itemsPerPage;
+function refreshPagination(state) {
+  if (!state) return; // 인자 누락 방지
 
-  items.forEach((el, i) => {
-    el.style.display = i < itemsToShow ? 'grid' : 'none';
-  });
-
-  if (itemsToShow >= totalItems) {
-    showMoreBtn.textContent = '접기';
-    expanded = true;
-  } else {
-    showMoreBtn.textContent = '더 보기';
-    expanded = false;
+  const pageInfo = document.getElementById('page-info');
+  const prevBtn  = document.getElementById('page-prev');
+  const nextBtn  = document.getElementById('page-next');
+  if (!pageInfo || !prevBtn || !nextBtn) {
+    console.warn('[pagination] 필요한 엘리먼트가 없습니다.');
+    return;
   }
 
-  showMoreBtn.style.display = totalItems <= itemsPerPage ? 'none' : 'inline-block';
+  const { total, limit, offset } = state;
+  const currentPage = Math.floor(offset / limit) + 1;
+  const totalPages  = Math.max(1, Math.ceil(total / limit));
+
+  pageInfo.textContent = `${currentPage} / ${totalPages}`;
+  prevBtn.disabled = currentPage <= 1;
+  nextBtn.disabled = currentPage >= totalPages;
+
+  // 버튼 이벤트(중복 바인딩 방지용 먼저 제거)
+  prevBtn.onclick = null; nextBtn.onclick = null;
+  prevBtn.onclick = async () => {
+    if (currentPage <= 1) return;
+    const newOffset = Math.max(0, offset - limit);
+    await renderPage(newOffset, limit);
+  };
+  nextBtn.onclick = async () => {
+    if (currentPage >= totalPages) return;
+    const newOffset = offset + limit;
+    await renderPage(newOffset, limit);
+  };
+}
+
+async function renderPage(offset = 0, limit = 12) {
+  const historyListEl = document.getElementById('historyList');
+  historyListEl.innerHTML = '';
+
+  const { items, total, limit: L, offset: O } = await loadHistory(offset, limit);
+
+  items.forEach(item => {
+    renderHistoryItem(item.video_title || `video_${item.video_id}`, item.video_id);
+  });
+
+  paginationState = { total, limit: L, offset: O }; // 전역 갱신
+  refreshPagination(paginationState);
 }
 
 async function saveHistory(videoId) {
@@ -94,40 +123,41 @@ async function saveHistory(videoId) {
   }
 }
 
-async function loadHistory(userVideoIds) {
-  const historyList = document.getElementById('historyList');
-  historyList.innerHTML = '';
+async function loadHistory(offset = 0, limit = 12) {
   await ensureAccess();
-
-  // 순차 호출이 느리면 Promise.all로 병렬화 가능
-  for (const videoId of userVideoIds) {
-    const res = await authFetch(`${API_BASE}/nova/history/${encodeURIComponent(videoId)}`);
-    if (res.ok) {
-      const data = await res.json().catch(()=> ({}));
-      const item = data.history?.[0];
-      if (item) renderHistoryItem(item.video_title, item.video_id);
-    }
+  const res = await authFetch(`${API_BASE}/nova/history/list?offset=${offset}&limit=${limit}`);
+  if (!res.ok) {
+    const t = await res.text().catch(()=> '');
+    throw new Error(`히스토리 로드 실패: ${res.status} ${t}`);
   }
-}
+  const data = await res.json();
 
+  // 목록 렌더는 호출한 쪽에서 하게 하고, 여기서는 데이터만 반환
+  return {
+    items: Array.isArray(data.history) ? data.history : [],
+    total: Number(data.total ?? 0),
+    limit: Number(data.limit ?? limit),
+    offset: Number(data.offset ?? offset),
+  };
+}
 async function deleteHistory(videoId) {
   await ensureAccess();
   const res = await authFetch(`${API_BASE}/nova/history/${encodeURIComponent(videoId)}`, {
     method: 'DELETE',
   });
 
-  if (res.ok) return true;
+  if (res.ok) return await res.json().catch(()=> ({}));
 
-  const errText = await res.text().catch(()=>'');
-  console.error('히스토리 삭제 실패:', res.status, errText);
+  const errText = await res.text().catch(()=> '');
+  console.error('히스토리/비디오 삭제 실패:', res.status, errText);
   if (res.status === 401) alert('삭제 권한이 없습니다. 로그인 상태를 확인해주세요.');
+  else if (res.status === 404) alert('이미 삭제되었거나 존재하지 않습니다.');
   else alert(`삭제 실패: ${res.status}`);
-  return false;
+  return null;
 }
 
 function renderHistoryItem(title, videoId) {
   const historyList = document.getElementById('historyList');
-
   const div = document.createElement('div');
   div.className = 'history-item';
   div.dataset.id = videoId;
@@ -135,6 +165,10 @@ function renderHistoryItem(title, videoId) {
   const titleDiv = document.createElement('div');
   titleDiv.className = 'video-title';
   titleDiv.textContent = title;
+  titleDiv.style.cursor = 'pointer';
+  titleDiv.onclick = () => {
+    window.location.href = `/html/dashboard.html?video_id=${encodeURIComponent(videoId)}`;
+  };
 
   const feedbackBtn = document.createElement('button');
   feedbackBtn.className = 'feedback-btn';
@@ -145,14 +179,10 @@ function renderHistoryItem(title, videoId) {
   deleteBtn.className = 'delete-btn';
   deleteBtn.textContent = '삭제';
   deleteBtn.onclick = async () => {
-    const ok = await deleteHistory(videoId);
-    if (ok) {
-      const updated = JSON.parse(localStorage.getItem('video_history') || '[]')
-        .filter(h => h.video_id !== videoId);
-      localStorage.setItem('video_history', JSON.stringify(updated));
-      div.remove();
-      refreshPagination();
-      alert('히스토리 삭제 완료');
+    const res = await deleteHistory(videoId); // ✅ 항상 전체 삭제
+    if (res) {
+      alert(res.message || '삭제 완료');
+      await renderPage(paginationState.offset, paginationState.limit); // 목록/페이지네이션 갱신
     }
   };
 
@@ -162,8 +192,8 @@ function renderHistoryItem(title, videoId) {
   historyList.appendChild(div);
 }
 
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // 로그인 확인
   await initAuth();
   const loggedIn = await isLoggedIn();
   if (!loggedIn) {
@@ -172,27 +202,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  const historyList = document.getElementById('historyList');
+  // 최초 1페이지
+  await renderPage(0, 12);
+
+  // “더 보기” 버튼을 페이지 증가로 매핑 (원한다면 유지)
   const showMoreBtn = document.getElementById('showMoreBtn');
-
-  const localHistory = JSON.parse(localStorage.getItem('video_history') || '[]');
-  const videoIds = localHistory.map(x => x.video_id);
-
-  historyList.innerHTML = '';
-
-  if (videoIds.length > 0) {
-    await loadHistory(videoIds); // 서버 데이터
-  } else {
-    // 서버에 조회할 id가 없으면 로컬만 사용(선택)
-    localHistory.forEach(item => renderHistoryItem(item.title, item.video_id));
+  if (showMoreBtn) {
+    showMoreBtn.onclick = async () => {
+      const { total, limit, offset } = paginationState;
+      const currentPage = Math.floor(offset / limit) + 1;
+      const totalPages  = Math.max(1, Math.ceil(total / limit));
+      if (currentPage < totalPages) {
+        await renderPage(offset + limit, limit);
+      }
+    };
   }
 
-  refreshPagination();
-
-  showMoreBtn.addEventListener('click', () => {
-    const totalItems = document.querySelectorAll('.history-item').length;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
-    currentPage = expanded ? 1 : Math.min(currentPage + 1, totalPages);
-    refreshPagination();
-  });
+  document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+  document.getElementById('feedback-submit-btn')?.addEventListener('click', submitFeedback);
+  
 });

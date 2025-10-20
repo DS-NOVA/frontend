@@ -9,10 +9,9 @@
   <link rel="stylesheet" href="../css/history.css" />
 </head>
 <body>
-
-    <header>
-      <div id="nav"></div>
-    </header>
+  <header>
+    <div id="nav"></div>
+  </header>
 
   <div class="container">
     <div class="content">
@@ -22,38 +21,35 @@
         또한, 특정 영상에 대한 피드백을 남겨주시면, AI 학습에 반영됩니다.
       </p>
 
-      <div class="history-list" id="historyList">
+      <!-- ✅ 목록은 카드만 렌더 -->
+      <div class="history-list" id="historyList"></div>
 
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
-        <div class="history-item"><div class="video-title">영상 제목</div><button class="feedback-btn" onclick="openModal('예시')">피드백 보내기</button><button class="delete-btn">삭제</button></div>
+      <!-- ✅ 페이지네이션 바 (history.js의 refreshPagination가 참조) -->
+      <div class="pagination" id="pagination" style="display:flex; align-items:center; gap:12px; justify-content:center; margin-top:16px;">
+        <button id="page-prev" class="page-btn" type="button" disabled>이전</button>
+        <span id="page-info" aria-live="polite">1 / 1</span>
+        <button id="page-next" class="page-btn" type="button" disabled>다음</button>
       </div>
 
-      <div id="moreButtonWrapper" style="text-align: center; margin-top: 20px;">
-        <button id="showMoreBtn" class="feedback-btn">더 보기</button>
-      </div>
+  
     </div>
   </div>
 
+  <!-- 피드백 모달 -->
   <div id="feedbackModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">영상 이름</h3>
-        <button class="close-btn" onclick="closeModal()">×</button>
+        <h3 class="modal-title" id="modalTitle">영상 이름</h3>
+        <button id="modal-close-btn" class="close-btn" aria-label="닫기">X</button>
       </div>
       <div class="file-name">영상 제목</div>
       <label class="feedback-label">내용</label>
       <textarea class="feedback-textarea" placeholder="피드백을 입력하세요..."></textarea>
-      <button class="submit-btn" onclick="submitFeedback()">전송</button>
-      <div style="clear: both;"></div>
+      <button id="feedback-submit-btn" class="submit-btn" type="button">전송</button>
+      <div style="clear:both;"></div>
     </div>
   </div>
+
   <script type="module" src="../js/nav.js"></script>
   <script type="module" src="../js/history.js"></script>
 </body>

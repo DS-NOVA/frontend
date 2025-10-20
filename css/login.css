@@ -56,8 +56,9 @@ body {
   border: 1px solid var(--color-main-blue);
   border-radius: 15px;
   font-size: 100%;
-  width: 100%;  
+  width: 110%;  /*100%*/
   box-sizing: border-box;
+  height: 60px; /*삭제*/
 }
 
 .login-form a{

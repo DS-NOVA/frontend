@@ -44,12 +44,13 @@ body {
 .main-content h1{
     font-family: var(--font-primary);
     font-weight: 700;
-    font-size: 300%;
+    font-size:500%; /*300%*/
 }
 
 .main-content h3{
     font-family: var(--font-primary);
-    font-weight: 500;
+    font-weight: 600; /*500*/
+    font-size: 30px;  /*font-size 없음*/
 }
 
 .main-btn{
@@ -71,8 +72,9 @@ body {
 #main-dashboard{
     background-color: var(--color-main-blue);
     color: var(--color-main-white);
-    width: 8%;
-    padding: 0.8% 2%;
+    width: 13%;
+    padding: 1% 2%; /*0.8% 2%*/
     border: 1px solid var(--color-main-blue);
     border-radius: 40px;
+    font-size: 20px; /*font-size 없음*/
 }

@@ -13,12 +13,23 @@ function showGuest() {
   });
 }
 //로그인 된 경우
-function showUser(email) {
+function showUser(email, imageUrl) {
   document.querySelector('.non-user-profile')?.style.setProperty('display', 'none');
   document.querySelector('.user-profile')?.style.removeProperty('display');
 
   const el = document.getElementById('user-id');
   if (el) el.textContent = email || 'User';
+  
+  const imgEl = document.querySelector('.user_img');
+  if (imgEl) {
+    if (imageUrl?.startsWith('/')) {
+      imgEl.src = `${API_BASE}${imageUrl}`;   // ✅ 백엔드 베이스 붙여줌
+    } else if (imageUrl) {
+      imgEl.src = imageUrl;                   // 절대 URL이면 그대로
+    } else {
+      imgEl.src = '/img/user_img.png';        // 기본 이미지
+    }
+  }
 
   const history = document.getElementById('nav-history');
   if (history && !history.dataset.bound) {
@@ -53,7 +64,7 @@ async function bootNavLogic() {
     const resp = await authFetch(`${API_BASE}/nova/auth/me`);//여기 경로 추후 수정!!
     if (!resp.ok) return;
     const data = await resp.json();
-    showUser(data?.user?.user_email);
+    showUser(data?.user?.user_email, data?.user?.user_image);
   } catch {}
 }
 

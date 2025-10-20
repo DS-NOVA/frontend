@@ -22,7 +22,7 @@ section{
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 20px 30px;
+  margin: 10px 30px;
   display: flex;
   align-items: center; /* 수직 가운데 정렬 */
   gap: 20px; /* 슬라이더와 버튼 사이 간격 */
@@ -47,7 +47,7 @@ input[type=range] {
   width: 150px;
   height: 6px;
   border-radius: 3px;
-  background: linear-gradient(to right, #5287EA 25%, #ddd 25%); /* 예시: 값 0.75 */
+  background: linear-gradient(to right, #5287EA 75%, #ddd 75%); /* 예시: 값 0.75 */
   outline: none;
 }
 
@@ -58,7 +58,7 @@ input[type=range]::-webkit-slider-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #5287EA; /* 핸들 색상 */
+  background: #81B4F5; /* 핸들 색상 */
   cursor: pointer;
 }
 
@@ -67,7 +67,7 @@ input[type=range]::-moz-range-thumb {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #5287EA;
+  background: #81B4F5;
   cursor: pointer;
   border: none;
 }
@@ -89,7 +89,7 @@ input[type=range]:disabled {
   border: none;
   gap: 8px;                
   padding: 5px 5px;
-  font-size: 12px;
+  font-size: 15px;
   display: flex;
   align-items: center; 
   justify-content: center;
@@ -141,7 +141,7 @@ input[type=range]:disabled {
   color: white;
   border: none;
   padding: 8px 20px;
-  font-size: 11px;
+  font-size: 16px;
   border-radius: 200px;
   cursor: pointer;
   transition: background-color 0.2s ease;
@@ -162,10 +162,19 @@ input[type=range]:disabled {
   gap: 10px; 
 }
 
+.g-title {
+  font-size: 33px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 15px;
+  text-align: left;
+  margin-top: 30px;        
+  width: 100%;      
+}
 .videoWrapper {
   position: relative; /* ✅ 반드시 설정 */
   width: 100%;
-  height: 450px;
+  height: 400px;
   overflow: hidden; /* 필요 시 비디오 넘침 방지 */
   border-radius: 8px;
   background: #000;
@@ -183,6 +192,7 @@ input[type=range]:disabled {
 }
 
 #inputVideo, #outputVideo {
+  margin-top: 0px; /*3px*/
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -204,13 +214,6 @@ input[type=range]:disabled {
   pointer-events: none; /* 버튼은 클릭 못하게 막히니 아래 버튼만 따로 pointer-events 주기 */
 }
 
-#pauseBtn {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 4;
-  pointer-events: auto; /* ✅ 클릭 가능하게 */
-}
 
 /* 타임라인 컨테이너 - 수정된 부분 */
 .timeline-container {
@@ -379,55 +382,8 @@ input[type=range]:disabled {
 .content-wrapper {
   display: flex;
   gap: 30px;
-  margin: 20px 30px;
+  margin: 0px 30px;
   align-items: flex-start;
-}
-
-.guidelines-section {
-  flex: 0 0 320px;
-  background: #ffffff;
-  border: 2px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 16px 20px 20px 20px; 
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 80px;
-}
-
-.guidelines-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #333;
-  margin: 0 0 18px 0; 
-  text-align: left;
-}
-
-.guidelines-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.guidelines-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  margin-bottom: 14px; 
-  font-size: 14px;
-  color: #555;
-  line-height: 1.4; 
-}
-
-.guidelines-item:last-child {
-  margin-bottom: 0;
-}
-
-.guidelines-bullet {
-  width: 6px;
-  height: 6px;
-  background-color: #333;
-  border-radius: 50%;
-  margin-top: 6px; 
-  flex-shrink: 0;
 }
 
 .video-section {
@@ -444,24 +400,42 @@ input[type=range]:disabled {
 
 .input small, .output small {
   display: block;
-  margin-bottom: 8px;
-  font-size: 12px;
+  margin-top: 8px;
+  margin-bottom: 35px; /*8px*/
+  font-size: 20px;
   color: #666;
 }
 
 /* 그래프 */
 .graph {
   width: 100%;
-  padding: 0 50px;
   box-sizing: border-box;
   overflow-x: auto;
-  margin-bottom: 30px;
+  height: 100%;
+
 }
+
+.graph-title {
+  font-size: 35px;
+  font-weight: 700;
+  color: #222;
+  margin-top: 20px; 
+  margin-bottom: 10px;  
+}
+
+.graph-title-small{
+  color: #333;
+  font-size: 20px;
+  line-height: 1.45;
+}
+
 
 #graph-container {
   border-radius: 15px;
   overflow: hidden;
   background: #5287EA;
+  margin-top: 8px;
+  
 }
 
 #graph-container .apexcharts-canvas,
@@ -478,4 +452,166 @@ input[type=range]:disabled {
 
 #graph-container .apexcharts-toolbar svg {
   fill: white !important;
+}
+
+.uid{
+  width: 100%;
+}
+
+
+#uid2-text small{
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-size: 20px;  /*추후 수정 15px로 */
+  color: #666
+}
+.guidelines-section {
+  width: 320px;
+  height: 430px;
+
+  /* 박스 스타일 */
+  background: #fff;              
+  border: 1px solid #E6ECF5; 
+  border-radius: 20px;              
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06); 
+
+  /* 내부 여백/레이아웃 */
+  padding: 0px 0px 0px 0px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;   
+  justify-content: flex-start;
+  flex-shrink: 0;
+}
+
+.guidelines-title {
+  font-size: 33px;
+  font-weight: 700;
+  color: #222;
+
+  text-align: left; 
+   
+  width: 100%;      
+}
+
+.guidelines-list {
+  list-style: none;
+  padding: 15px 0px 0px 0px;
+  font-size: 70px;
+  margin: 14px 30px 30px 30px; /*30px*/ 
+  width: auto;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.guidelines-item {
+  display: list-item;
+  list-style-type: disc;
+  list-style-position: outside;
+  font-size: 17px; /*15px*/
+  gap: 0.3em; 
+  line-height: 1.0;
+  color: #333;
+  padding: 4px 0;
+}
+
+.guidelines-item.has-icon{
+  display: flex;
+  align-items: flex-start;   /* 텍스트 첫 줄 기준으로 위쪽 맞춤 */
+  gap: 2px; /*5px?*/
+  margin-bottom: 16px;
+  list-style: none;          /* 기본 불릿 제거 */
+}
+
+.guidelines-item.has-icon .guidelines-text{
+  line-height: 1.45;
+}
+
+.icon-img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  flex-shrink: 10;
+  transform: translateY(-0.1em)
+}
+
+.icon-img[hidden] {
+  display: none;
+}
+
+.guidelines-section .guidelines-text-big{
+  display: inline-block; 
+  font-size: 20px;
+  margin-bottom: 15px;
+}
+
+
+.guidelines-item.sub-item .icon-img {
+  visibility: hidden;
+}
+
+.invisible-icon {
+  visibility: hidden; 
+}
+
+.guidelines-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #333;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.guidelines-bullet.hide {
+  display: none;
+}
+
+.guidelines-bullet.transparent {
+  background-color: transparent;
+}
+
+.guidelines-item.sub-item {
+  margin-top: -45px; 
+}
+
+.guidelines-item.transparent-bullet::marker {
+  color: transparent;          
+}
+
+.guidelines-item[data-guideline="redlight"] + .guidelines-item.sub-item {
+  margin-top: -14px;           
+}
+
+.guidelines-item.sub-item {
+  list-style: disc;           
+  margin-left: 20px;          
+  color: #333;
+}
+
+.guidelines-item.transparent-bullet .guidelines-text .guidelines-text-big{
+  color: #333;
+}
+/* === Guidelines 색상 일관화 & 선택자 수정 === */
+
+/* PASS는 초록, FAIL은 빨강 */
+.guidelines-item.pass .guidelines-box,
+.guidelines-item.pass .guidelines-text-big,
+.guidelines-item.pass .guidelines-text {
+  color: #28a745 !important;
+}
+
+.guidelines-item.fail .guidelines-box,
+.guidelines-item.fail .guidelines-text-big,
+.guidelines-item.fail .guidelines-text {
+  color: #dc3545 !important;
+}
+
+/* 기존 잘못된 중첩 선택자 교정 (guidelines-text 안에 big이 들어있지 않음) */
+.guidelines-item.transparent-bullet .guidelines-text-big {
+  color: #333 !important;
 }
