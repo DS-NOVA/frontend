@@ -160,7 +160,6 @@ async function submitFeedback() {
     }
 
     const result = await resp.json().catch(() => ({}));
-    //alert(result.message || '피드백이 전송되었습니다.');
     toast('피드백이 전송되었습니다.', { type: 'success', duration: 2200 });
     closeModal();
   } catch (e) {

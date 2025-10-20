@@ -25,7 +25,7 @@ function showUser(email, imageUrl) {
   const imgEl = document.querySelector('.user_img');
   if (imgEl) {
     if (imageUrl?.startsWith('/')) {
-      imgEl.src = `${API_BASE}${imageUrl}`;   // ✅ 백엔드 베이스 붙여줌
+      imgEl.src = `${API_BASE}${imageUrl}`;  
     } else if (imageUrl) {
       imgEl.src = imageUrl;                   // 절대 URL이면 그대로
     } else {
@@ -37,7 +37,7 @@ function showUser(email, imageUrl) {
   if (history && !history.dataset.bound) {
     history.dataset.bound = '1';
     history.addEventListener('click', () => {
-      window.location.href = '/html/history.html'; // 경로 다르면 여기만 바꿔주세요
+      window.location.href = '/html/history.html'; 
     });
   }
 
@@ -62,7 +62,7 @@ async function bootNavLogic() {
   showGuest();
   try {
     await ensureAccess();                 // 필요할 때만 refresh (CSRF 없으면 패스)
-    if (!window.ACCESS_TOKEN) return;     // 비로그인 → 게스트 유지
+    if (!window.ACCESS_TOKEN) return;     // 비로그인 -> 게스트 유지
     const resp = await authFetch(`${API_BASE}/nova/auth/me`);//여기 경로 추후 수정!!
     if (!resp.ok) return;
     const data = await resp.json();

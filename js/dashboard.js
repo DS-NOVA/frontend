@@ -213,39 +213,6 @@ function updateTooltipPosition(e) {
   tooltip.style.transform = 'translateX(-50%)';
 }
 
-// 재생/일시정지 (원본 유지)
-/*function handlerPauseBtn() {
-  if (pause) {
-    console.log("click start");
-    outputVideo.play().then(() => {
-      const currentTime = outputVideo.currentTime;
-      const activeRange = overlayRanges.find(range =>
-        currentTime >= range.start && currentTime <= range.end
-      );
-
-      if (activeRange) {
-        overlayVideo.src = activeRange.overlaySrc;
-        overlayVideo.load();
-        overlayVideo.onloadeddata = () => {
-          overlayVideo.currentTime = currentTime - activeRange.start;
-          overlayVideo.style.opacity = "1";
-          overlayVideo.play().catch(e => {
-            console.warn("Overlay autoplay failed:", e);
-          });
-        };
-      }
-      pause = false;
-    }).catch(e => {
-      console.log('Autoplay prevented:', e);
-    });
-  } else {
-    console.log("click pause");
-    outputVideo.pause();
-    overlayVideo.pause();
-    pause = true;
-  }
-}*/
-
 // 히스토리 복원 (백엔드 연동 원본 유지)
 async function hydrateFromHistory(videoId) {
   await ensureAccess();
@@ -315,6 +282,7 @@ async function hydrateFromHistory(videoId) {
       labels: Array.isArray(labels) ? labels : []
     }))
   : [];
+
   setupTimeline();          // ← 아래에서 인/아웃 타임라인 모두 세팅으로 오버라이드됨
   setupTimeUpdateHandler(); // ← 아래에서 진행바 갱신까지 포함되도록 오버라이드됨
 
@@ -333,7 +301,6 @@ async function hydrateFromHistory(videoId) {
     guidelineSummary: payload.guidelineSummary, // 폴백용
   });
 
-  // ===== 초기화: 자동재생 없이 0초로 정렬 =====
   try {
       await ensureReadyAndSyncTime(0);
       inputVideo.pause?.();
@@ -644,9 +611,9 @@ document.getElementById('dashboard-play').addEventListener('click', async (e) =>
       if (!graphDataToUse) {
         const testResp = await fetch("/data/test_data.json", { cache: "no-store" });
         graphDataToUse = await testResp.json();
-        console.log("✅ testData 불러옴(폴백):", graphDataToUse);
+        console.log("testData 불러옴(폴백):", graphDataToUse);
       } else {
-        console.log("✅ result.graphData 사용");
+        console.log("result.graphData 사용");
       }
 
       // RiskGraph(graphDataToUse);
@@ -712,7 +679,7 @@ function mapFileNameToId(fileName) {
 }
 
 window.addEventListener('beforeunload', () => {
-  console.warn('🚨 페이지 unload 발생!');
+  console.warn('페이지 unload 발생!');
 });
 
 
@@ -781,8 +748,6 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
     setTimeout(() => {
          try { URL.revokeObjectURL(blobUrl); } catch {}
        }, 5000);
-
-
     // 결과 pdf 저장
     try {
       const candidates = buildPdfCandidates(payloadForSave, videoSrc);
@@ -805,7 +770,6 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
     } catch (pdfErr) {
       console.warn('PDF 다운로드 처리 중 오류:', pdfErr);
     }
- 
 
     // 저장 호출 (payload 전달)
     const respSave = await authFetch(`${API_BASE}/nova/history/${videoIdForSave}/save`, {
@@ -829,6 +793,7 @@ document.getElementById('dashboard-save').addEventListener('click', async () => 
    else if (srcName && TestvideoData[srcName] && saveResult.video_id) {
      TestvideoData[srcName].videoId = saveResult.video_id;
    }
+
     //alert('변환 영상, 결과지가 저장되었습니다!');
     toast('변환 영상, 결과지가 저장되었습니다!', { type: 'success', duration: 2200 });
   } catch (e) {
@@ -1455,6 +1420,7 @@ setupTimeUpdateHandler = function () {
         .__timeline-root { z-index: 10000; }
 
         /* 스플래시 최상위 + 보이기/숨김 안정화 */
+<<<<<<< HEAD
        #detect-splash[hidden] { display: none !important; }
        #detect-splash { position: fixed !important; inset: 0; z-index: 20000; pointer-events: auto; }
 
@@ -1465,6 +1431,18 @@ setupTimeUpdateHandler = function () {
        html.is-detecting .ui-disabled {
          pointer-events: none !important;
        }
+=======
+        #detect-splash[hidden] { display: none !important; }
+        #detect-splash { position: fixed !important; inset: 0; z-index: 20000; pointer-events: auto; }
+
+        /* 스플래시 중엔 타임라인/컨트롤 비활성화 */
+        html.is-detecting { cursor: progress; }
+        html.is-detecting #inputTimelineHost,
+        html.is-detecting #outputTimelineHost,
+        html.is-detecting .ui-disabled {
+          pointer-events: none !important;
+        }
+>>>>>>> 7e914bf8ba85f1b157a29536a6b25c2026e38515
       `;
       document.head.appendChild(style);
     }
@@ -1820,24 +1798,6 @@ setupTimeUpdateHandler = function () {
     // __prevSetupTimeUpdateHandler?.(); // 필요시 호출
   };
 
-  // 6) 동시 재생 버튼이 HTML에 없으면 동적으로 생성 + 핸들러 연결
-  /*
-  (function ensureSyncButton() {
-    let btn = document.getElementById('pauseBtn');
-    if (!btn) {
-      const holder = document.querySelector('.button-item');
-      if (holder) {
-        btn = document.createElement('button');
-        btn.id = 'pauseBtn';
-        btn.textContent = 'PAUSE';
-        holder.prepend(btn);
-      }
-    }
-    if (btn) {
-      btn.removeEventListener('click', handlerPauseBtn);
-      btn.addEventListener('click', handlerPauseBtn);
-    }
-  })();*/
 
   // 7) 이미 로딩된 경우 즉시 한 번 세팅 (안전)
   if (outputVideo?.readyState >= 1) {

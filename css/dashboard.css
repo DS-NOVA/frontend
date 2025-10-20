@@ -172,7 +172,7 @@ input[type=range]:disabled {
   width: 100%;      
 }
 .videoWrapper {
-  position: relative; /* ✅ 반드시 설정 */
+  position: relative; 
   width: 100%;
   height: 400px;
   overflow: hidden; /* 필요 시 비디오 넘침 방지 */
@@ -181,7 +181,7 @@ input[type=range]:disabled {
 }
 
 #overlayVideo {
-  position: absolute; /* ✅ 오버레이만 겹치게 */
+  position: absolute; /* 오버레이만 겹치게 */
   top: 0;
   left: 0;
   width: 100%;
@@ -208,7 +208,7 @@ input[type=range]:disabled {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 3; /* ✅ 비디오보다 위 */
+  z-index: 3; /* 비디오보다 위 */
   width: 100%;
   height: 100%;
   pointer-events: none; /* 버튼은 클릭 못하게 막히니 아래 버튼만 따로 pointer-events 주기 */
@@ -217,7 +217,7 @@ input[type=range]:disabled {
 
 /* 타임라인 컨테이너 - 수정된 부분 */
 .timeline-container {
-  position: relative; /* absolute에서 relative로 변경 */
+  position: relative;
   width: 100%;
   height: auto;
   margin-top: 12px; /* 비디오와 간격 */
@@ -226,7 +226,7 @@ input[type=range]:disabled {
   pointer-events: auto;
 }
 
-/* 툴팁 스타일 - 대폭 수정 */
+/* 툴팁 스타일 */
 .timeline-tooltip {
   position: absolute;
   bottom: 120%; /* 트랙 위로 충분히 띄움 */
@@ -264,7 +264,6 @@ input[type=range]:disabled {
   border-color: rgba(20, 20, 20, 0.95) transparent transparent transparent;
 }
 
-/* 툴팁 내부 스타일 개선 */
 .tooltip-title {
   font-weight: bold;
   margin-bottom: 4px;
@@ -286,7 +285,7 @@ input[type=range]:disabled {
 .detect-splash {
   position: fixed;
   inset: 0;
-  background: rgba(236, 243, 255, 0.7);  /* 반투명 배경 */
+  background: rgba(236, 243, 255, 0.7);
   backdrop-filter: blur(5px);
   z-index: 9999;
   display: flex;
@@ -299,7 +298,6 @@ input[type=range]:disabled {
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  /* 하얀 박스 스타일 모두 제거 */
 }
 
 .spinner-container {
@@ -490,9 +488,7 @@ input[type=range]:disabled {
   font-size: 33px;
   font-weight: 700;
   color: #222;
-
   text-align: left; 
-   
   width: 100%;      
 }
 

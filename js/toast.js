@@ -44,4 +44,3 @@ export function toast(
   
     return { close: remove };
   }
-  
